@@ -129,11 +129,22 @@ fi
 # 7. FINALIZE
 # =============================================================================
 # Set Zsh as default
-if [ "$SHELL" != "$(which zsh)" ]; then
-    echo -e "${YELLOW}Changing default shell to zsh...${NC}"
-    chsh -s "$(which zsh)"
+# Define Zsh path
+ZSH_PATH=$(which zsh)
+
+# Ensure Zsh is in /etc/shells
+if ! grep -q "$ZSH_PATH" /etc/shells; then
+    echo "Adding $ZSH_PATH to /etc/shells..."
+    echo "$ZSH_PATH" | sudo tee -a /etc/shells
 fi
 
-echo -e "${GREEN}Setup Complete!${NC}"
-echo -e "1. Please log out and log back in."
-echo -e "2. Your .zshrc will auto-install Zinit and plugins on the first run."
+# Change shell (try non-interactive first)
+if [ "$SHELL" != "$ZSH_PATH" ]; then
+    echo "Changing default shell to Zsh..."
+    # Attempt to change shell using sudo (will ask for password once)
+    sudo usermod --shell "$ZSH_PATH" "$USER" || chsh -s "$ZSH_PATH"
+fi
+
+echo -e "\n${GREEN}✔ Z-Shift Installation Complete!${NC}"
+echo -e "${YELLOW}➜ ACTION REQUIRED: Log out and log back in to activate the Zsh shell.${NC}"
+echo -e "${YELLOW}➜ NOTE: Set your terminal font to 'FiraCode Nerd Font' to ensure icons render correctly.${NC}"
