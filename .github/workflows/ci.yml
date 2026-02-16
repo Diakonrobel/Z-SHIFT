@@ -1,0 +1,164 @@
+name: Z-Shift CI
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore: ['README.md', 'LICENSE']
+  pull_request:
+    branches: [ main ]
+    paths-ignore: ['README.md', 'LICENSE']
+  workflow_dispatch:
+
+jobs:
+  # -----------------------------------------------------------------------------
+  # JOB 1: STATIC ANALYSIS (LINTING)
+  # -----------------------------------------------------------------------------
+  lint:
+    runs-on: ubuntu-latest
+    name: Syntax Check
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Shellcheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Lint Installer (Bash)
+        # SC2086: Double quote variables (ignored for flexibility)
+        # SC2034: Unused variables (ignored)
+        # SC1091: Not following sourced files (ignored for /etc/os-release)
+        run: shellcheck -e SC2086,SC2034,SC1091 install.sh
+
+      - name: Verify Zsh Syntax
+        run: |
+          sudo apt-get install -y zsh
+          zsh -n .zshrc
+
+  # -----------------------------------------------------------------------------
+  # JOB 2: INTEGRATION TEST (UBUNTU & MACOS)
+  # -----------------------------------------------------------------------------
+  integration-test:
+    needs: lint
+    name: Install on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Grant Execute Permissions
+        run: chmod +x install.sh
+
+      - name: Run Installer (Non-Interactive)
+        # Pipes 'yes' for prompts. Uses CI_ENV to skip fonts/chsh.
+        run: |
+          yes | ./install.sh
+        env:
+          CI_ENV: true 
+
+      - name: Verify Zshrc Created
+        run: |
+          if [ ! -f "$HOME/.zshrc" ]; then
+            echo "Error: .zshrc was not created!"
+            exit 1
+          fi
+
+      # FIX FOR MAC/UBUNTU: 
+      # We must run zsh once to trigger the Zinit git clone inside .zshrc
+      - name: Bootstrap Zinit (Initialize Zsh)
+        run: zsh -ic "exit" || true
+
+      - name: Verify Plugins Installed
+        run: |
+          # Check standard XDG path or legacy path
+          if [ ! -d "${HOME}/.local/share/zinit" ] && [ ! -d "${HOME}/.zinit" ]; then
+             echo "Error: Zinit directory not found! Plugin installation failed."
+             exit 1
+          fi
+
+# -----------------------------------------------------------------------------
+  # JOB 3: MULTI-DISTRO DOCKER TEST (ARCH & FEDORA)
+  # -----------------------------------------------------------------------------
+  docker-matrix:
+    needs: lint
+    name: Docker Test (${{ matrix.distro }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        distro: [archlinux:latest, fedora:latest]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Test in Docker
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace ${{ matrix.distro }} /bin/bash -c "
+            # Set colors for better logging
+            GREEN='\033[0;32m'
+            NC='\033[0m'
+            
+            echo -e \"\${GREEN}>>> 1. SETUP: Installing dependencies for ${{ matrix.distro }}...\${NC}\"
+            
+            # --- ARCH LINUX ---
+            if [ -f /etc/arch-release ]; then
+              pacman -Sy --noconfirm archlinux-keyring
+              # Ensure wget is installed to handle the file:// download
+              pacman -Syu --noconfirm git curl wget unzip sudo which base-devel ca-certificates
+              
+              useradd -m -s /bin/bash tester
+              echo 'tester ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+            fi
+
+            # --- FEDORA ---
+            if [ -f /etc/fedora-release ]; then
+              dnf upgrade -y --refresh
+              dnf install -y git curl wget unzip sudo util-linux-user which findutils dnf-plugins-core ca-certificates
+
+              # Pre-install Eza
+              dnf install -y eza || (dnf copr enable -y piegames/eza && dnf install -y eza)
+              
+              useradd -m -s /bin/bash tester
+              echo 'tester ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+            fi
+
+            echo -e \"\${GREEN}>>> 2. PREPARE: Injecting local file path...\${NC}\"
+            
+            # 1. Copy the repository files to a temp location so we can modify them freely
+            cp /workspace/install.sh /tmp/install.sh
+            cp /workspace/.zshrc /tmp/.zshrc
+            
+            # 2. USE SED TO REPLACE THE URL
+            # This changes the URL from 'https://...' to 'file:///tmp/.zshrc'
+            # Now wget will 'download' the local file instead of going to the internet.
+            sed -i 's|^ZSHRC_URL=.*|ZSHRC_URL=\"file:///tmp/.zshrc\"|' /tmp/install.sh
+
+            # 3. Permissions
+            chmod +x /tmp/install.sh
+            chmod 644 /tmp/.zshrc
+            chown -R tester:tester /tmp
+
+            echo -e \"\${GREEN}>>> 3. TEST: Running installer as user tester...\${NC}\"
+            
+            # Run the modified script in /tmp
+            su tester -c 'export CI_ENV=true && yes | /tmp/install.sh'
+            
+            echo -e \"\${GREEN}>>> 4. VERIFY: Checking results...\${NC}\"
+            
+            if [ -f /home/tester/.zshrc ]; then
+              echo 'SUCCESS: .zshrc created'
+            else
+              echo 'FAILURE: .zshrc missing'
+              exit 1
+            fi
+            
+            # Verify Zinit bootstrap
+            su tester -c 'zsh -ic exit' || true
+            if [ -d /home/tester/.local/share/zinit ]; then
+               echo 'SUCCESS: Zinit installed'
+            else
+               echo 'FAILURE: Zinit missing'
+               exit 1
+            fi
+          "
