@@ -116,6 +116,7 @@ alias reload='source ~/.zshrc'
 # --- Zinit & Maintenance ---
 alias zini='zinit'
 alias zup='zinit self-update && zinit update --parallel && zinit cclear && tldr --update'
+alias zclean='zinit cclear && zinit delete --clean'
 
 # --- Eza (The ls replacement) ---
 if command -v eza &> /dev/null; then
@@ -150,3 +151,65 @@ help() {
 bindkey -e
 bindkey '^[[A' up-line-or-search
 bindkey '^[[B' down-line-or-search
+
+# =============================================================================
+# Z-SHIFT SELF-MAINTENANCE
+# =============================================================================
+
+# --- Z-Shift Self-Updater ---
+zshift-update() {
+    local DATE_STAMP BACKUP_FILE TEMP_ZSHRC UPDATE_URL
+    DATE_STAMP=$(date +%Y%m%d_%H%M%S)
+    BACKUP_FILE="$HOME/.zshrc.zshift_${DATE_STAMP}.bak"
+    TEMP_ZSHRC="$(mktemp)"
+    UPDATE_URL="https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/.zshrc"
+
+    echo -e "${BLUE}:: Initiating Z-Shift Update...${NC}"
+
+    if ! curl -fsSL -o "$TEMP_ZSHRC" "$UPDATE_URL"; then
+        echo -e "${RED}Error: Failed to download update. Check your connection.${NC}"
+        rm -f "$TEMP_ZSHRC"
+        return 1
+    fi
+
+    # Validation: Ensure it's a real Z-Shift file and not a redirect/HTML
+    if ! grep -q "ZINIT_INSTALLER" "$TEMP_ZSHRC"; then
+        echo -e "${RED}Error: Downloaded file is invalid (Integrity Check Failed).${NC}"
+        rm -f "$TEMP_ZSHRC"
+        return 1
+    fi
+
+    if [ -f "$HOME/.zshrc" ]; then
+        echo -e "${YELLOW}:: Backing up current config to: ${NC}$BACKUP_FILE"
+        cp "$HOME/.zshrc" "$BACKUP_FILE"
+    fi
+
+    mv "$TEMP_ZSHRC" "$HOME/.zshrc"
+    echo -e "${GREEN}:: Configuration file updated.${NC}"
+
+    if command -v zinit >/dev/null 2>&1; then
+        echo -e "${BLUE}:: Updating Zinit and Plugins...${NC}"
+        # We run this in a subshell to prevent Zinit from killing the current function on error
+        if ! (zinit self-update && zinit update --parallel); then
+            echo -e "${RED}!! Plugin update failed. Rolling back configuration...${NC}"
+            if [ -f "$BACKUP_FILE" ]; then
+                mv "$BACKUP_FILE" "$HOME/.zshrc"
+                echo -e "${YELLOW}:: Original .zshrc restored.${NC}"
+            fi
+            return 1
+        fi
+    fi
+
+    echo -e "\n${GREEN}✔ Z-Shift Update Complete! Restarting shell...${NC}"
+    # Refresh the shell to apply all changes instantly
+    exec zsh
+}
+
+# =============================================================================
+# LOCAL CUSTOMIZATIONS
+# =============================================================================
+# This allows users to add private/custom aliases in ~/.zshrc.local 
+# without them being wiped out by the 'zshift-update' command.
+if [ -f "$HOME/.zshrc.local" ]; then
+    source "$HOME/.zshrc.local"
+fi
