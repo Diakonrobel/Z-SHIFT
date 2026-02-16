@@ -10,6 +10,8 @@
 ![Zoxide](https://img.shields.io/badge/Nav-Zoxide-%23ff5555?style=flat-square&logo=rust&logoColor=white)
 ![Eza](https://img.shields.io/badge/List-Eza-%2350fa7b?style=flat-square)
 ![Bat](https://img.shields.io/badge/Cat-Bat-%23458588?style=flat-square)
+![Fd](https://img.shields.io/badge/Find-Fd-%238ec07c?style=flat-square&logo=rust&logoColor=white)
+![Fzf](https://img.shields.io/badge/Fuzzy-Fzf-%23d3869b?style=flat-square)
 ![Ripgrep](https://img.shields.io/badge/Search-Ripgrep-%233E8BFF?style=flat-square&logo=rust&logoColor=white)
 ![Tealdeer](https://img.shields.io/badge/Docs-Tealdeer-%2320B2AA?style=flat-square&logo=rust&logoColor=white)
 ![Nerd Fonts](https://img.shields.io/badge/Nerd_Fonts-%23333333.svg?style=flat-square&logo=nerdfonts&logoColor=white)
@@ -29,6 +31,8 @@ It handles the heavy lifting of installing a modern plugin manager, configuring 
 </div>
 
 ------------
+
+## Table of contents
 
 - [✨ Features](#-features)
 - [💿 Installation](#-installation)
@@ -50,11 +54,13 @@ It handles the heavy lifting of installing a modern plugin manager, configuring 
 
 - ***🛠 Modern CLI Arsenal:*** Automatically installs and configures:
 
-  - **zoxide:** A smarter `cd` command that learns your habits. [https://github.com/ajeetdsouza/zoxide]
-  - **eza:** A modern, maintained replacement for `ls` with colors and icons. [https://github.com/eza-community/eza]
   - **bat:** A `cat` clone with syntax highlighting and Git integration. [https://github.com/sharkdp/bat]
+  - **eza:** A modern & maintained replacement for `ls` with colors and icons. [https://github.com/eza-community/eza]
+  - **fd:** A simple & fast and user-friendly alternative to `find`. [https://github.com/sharkdp/fd]
+  - **fzf:** A general-purpose command-line fuzzy finder for lightning-fast file and history navigation. [https://github.com/junegunn/fzf]
   - **ripgrep:** A line-oriented search tool that respects .gitignore and is faster than grep. [https://github.com/BurntSushi/ripgrep]
   - **tealdeer:** A fast implementation of `tldr;` (simplified man pages). [https://github.com/tealdeer-rs/tealdeer]
+  - **zoxide:** A smarter `cd` command that learns your habits. [https://github.com/ajeetdsouza/zoxide]
 
 - ***⌨️ Pre-Configured Aliases:*** Includes a suite of intelligent aliases for common tasks to boost productivity immediately. You can use `alias` command to list all the aliases.
 
