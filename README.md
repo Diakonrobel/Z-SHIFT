@@ -67,6 +67,14 @@ It handles the heavy lifting of installing a modern plugin manager, configuring 
 
 - ***⌨️ Pre-Configured Aliases:*** Includes a suite of intelligent aliases for common tasks to boost productivity immediately. You can use `alias` command to list all the aliases.
 
+- 🏷️ Users can now save persistent `LOCAL CUSTOMIZATION` using `~/.zshrc.local` file. Also you can override the update source by setting `ZSHIFT_CUSTOM_URL` in their environment or `~/.zshrc.local`, making it easier for folks running forks to stay in sync with their own repos.
+
+```
+nano ~/.zshrc.local
+export ZSHIFT_CUSTOM_URL="https://raw.githubusercontent.com/username/repo-name/branch-name/.zshrc"
+```
+
+
 ------------
 
 
