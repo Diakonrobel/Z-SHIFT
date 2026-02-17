@@ -40,6 +40,7 @@ It handles the heavy lifting of installing a modern plugin manager, configuring 
       + [One-Line Install](#one-line-install)
       + [Manual Install](#manual-install)
 - [🗑️ Uninstall Z-SHIFT](#uninstall-z-shift)
+- [🎨 Change Themes](#-change-themes)
 - [📦 Plugin Ecosystem](#-plugin-ecosystem)
 - [🗺️ Roadmap](#-roadmap)
 - [🤝 Contributing](#-contributing)
@@ -76,7 +77,7 @@ It handles the heavy lifting of installing a modern plugin manager, configuring 
 You can set up your environment by running this command in your terminal:
 
 
-```
+```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/install.sh)"
 ``` 
 
@@ -87,7 +88,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/i
 
 If you prefer to download the script manually:
 
-```
+```bash
 curl -O https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/install.sh
 chmod +x install.sh
 ./install.sh
@@ -97,10 +98,23 @@ chmod +x install.sh
 ## Uninstall Z-SHIFT
 
 
-```
+```bash
 curl -O https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/uninstall.sh
 chmod +x uninstall.sh
 ./uninstall.sh
+```
+
+------------
+
+## 🎨 Change Themes
+
+Don't like the defaults? You can switch between **12 Starship presets** and **17 Eza color schemes** instantly using the interactive theme manager.
+
+#### Run Theme Switcher
+You can launch the menu directly from the web without downloading anything:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/theme.sh)"
 ```
 
 ------------
@@ -130,11 +144,13 @@ chmod +x uninstall.sh
 - [x] Safety Backup: Automatically backup existing `.zshrc`
 - [x] Multi-Distro Support: Add package manager detection (`pacman`, `dnf`, `zypper`) for Arch, Fedora, and OpenSUSE.
 - [x] MacOS Support: Add `Homebrew` support for macOS users.
-- [ ] Interactive Menu: Allow users to select themes for `starship` and `eza`.
 - [x] Uninstaller Script: Create a `uninstall.sh` to revert changes and restore the previous shell environment.
+
 ~~- [ ] Docker Test Container: Provide a `Dockerfile` so users can test the setup safely in a container before applying it to their host machine.~~
+
 - [x] Add Docker + Github Actions CI workflow to test releases.
 - [x] Self-Updater: Add a command (e.g., `zshift-update`) to pull the latest aliases and config changes.
+- [x] Interactive Menu: Allow users to select themes for `starship` and `eza`.
 
 
 ------------
