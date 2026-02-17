@@ -148,7 +148,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/t
 
 ~~- [ ] Docker Test Container: Provide a `Dockerfile` so users can test the setup safely in a container before applying it to their host machine.~~
 
-- [x] Add Docker + Github Actions CI workflow to test releases.
+- [x] CI Tests: Add Docker + Github Actions CI workflow to test releases.
 - [x] Self-Updater: Add a command (e.g., `zshift-update`) to pull the latest aliases and config changes.
 - [x] Interactive Menu: Allow users to select themes for `starship` and `eza`.
 
