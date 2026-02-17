@@ -39,7 +39,7 @@ It handles the heavy lifting of installing a modern plugin manager, configuring 
 - [💿 Installation](#-installation)
       + [One-Line Install](#one-line-install)
       + [Manual Install](#manual-install)
-- [🗑️ Uninstall Z-SHIFT](#-uninstall-z-shift)
+- [🗑️ Uninstall Z-SHIFT](#uninstall-z-shift)
 - [📦 Plugin Ecosystem](#-plugin-ecosystem)
 - [🗺️ Roadmap](#-roadmap)
 - [🤝 Contributing](#-contributing)
@@ -94,7 +94,8 @@ chmod +x install.sh
 ```
 ------------
 
-## 🗑️ Uninstall Z-SHIFT
+## Uninstall Z-SHIFT
+
 
 ```
 curl -O https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/uninstall.sh
