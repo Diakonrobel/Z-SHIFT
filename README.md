@@ -42,6 +42,7 @@ It handles the heavy lifting of installing a modern plugin manager, configuring 
 - [🗑️ Uninstall Z-SHIFT](#uninstall-z-shift)
 - [🎨 Change Themes](#-change-themes)
 - [📦 Plugin Ecosystem](#-plugin-ecosystem)
+- [🏷️ Persistent Customization](#️-persistent-customization)
 - [🗺️ Roadmap](#-roadmap)
 - [🤝 Contributing](#-contributing)
 - [📝 License](#-license)
@@ -66,13 +67,6 @@ It handles the heavy lifting of installing a modern plugin manager, configuring 
   - **zoxide:** A smarter `cd` command that learns your habits. [https://github.com/ajeetdsouza/zoxide]
 
 - ***⌨️ Pre-Configured Aliases:*** Includes a suite of intelligent aliases for common tasks to boost productivity immediately. You can use `alias` command to list all the aliases.
-
-- 🏷️ Users can now save persistent `LOCAL CUSTOMIZATION` using `~/.zshrc.local` file. Also you can override the update source by setting `ZSHIFT_CUSTOM_URL` in their environment or `~/.zshrc.local`, making it easier for folks running forks to stay in sync with their own repos.
-
-```
-nano ~/.zshrc.local
-export ZSHIFT_CUSTOM_URL="https://raw.githubusercontent.com/username/repo-name/branch-name/.zshrc"
-```
 
 
 ------------
@@ -144,6 +138,17 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/t
   - **extract:** One command to decompress almost any archive file (`.tar`, `.zip`, `.gz`, etc.).
   - **sudo:** Double-tap `ESC` to prepend `sudo` to the current or previous command.
   - **zsh-you-should-use:** Reminds you if there is an existing alias for the command you just typed.
+
+------------
+
+## 🏷️ Persistent Customization
+
+Users can now save persistent `LOCAL CUSTOMIZATION` using `~/.zshrc.local` file. Also you can override the update source by setting `ZSHIFT_CUSTOM_URL` in their environment or `~/.zshrc.local`, making it easier for folks running forks to stay in sync with their own repos.
+
+```bash
+nano ~/.zshrc.local
+export ZSHIFT_CUSTOM_URL="https://raw.githubusercontent.com/username/repo-name/branch-name/.zshrc"
+```
 
 ------------
 
