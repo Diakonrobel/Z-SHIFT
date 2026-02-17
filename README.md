@@ -39,6 +39,7 @@ It handles the heavy lifting of installing a modern plugin manager, configuring 
 - [💿 Installation](#-installation)
       + [One-Line Install](#one-line-install)
       + [Manual Install](#manual-install)
+- [🗑️ Uninstall Z-SHIFT](#uninstall-z-shift)
 - [📦 Plugin Ecosystem](#-plugin-ecosystem)
 - [🗺️ Roadmap](#-roadmap)
 - [🤝 Contributing](#-contributing)
@@ -91,6 +92,16 @@ curl -O https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/install.sh
 chmod +x install.sh
 ./install.sh
 ```
+------------
+
+## Uninstall Z-SHIFT
+
+
+```
+curl -O https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/uninstall.sh
+chmod +x uninstall.sh
+./uninstall.sh
+```
 
 ------------
 
@@ -120,9 +131,9 @@ chmod +x install.sh
 - [x] Multi-Distro Support: Add package manager detection (`pacman`, `dnf`, `zypper`) for Arch, Fedora, and OpenSUSE.
 - [x] MacOS Support: Add `Homebrew` support for macOS users.
 - [ ] Interactive Menu: Allow users to select themes for `starship` and `eza`.
-- [ ] Uninstaller Script: Create a `uninstall.sh` to revert changes and restore the previous shell environment.
+- [x] Uninstaller Script: Create a `uninstall.sh` to revert changes and restore the previous shell environment.
 - [ ] Docker Test Container: Provide a `Dockerfile` so users can test the setup safely in a container before applying it to their host machine.
-- [ ] Self-Updater: Add a command (e.g., `zshift-update`) to pull the latest aliases and config changes.
+- [x] Self-Updater: Add a command (e.g., `zshift-update`) to pull the latest aliases and config changes.
 
 
 ------------
