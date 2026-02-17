@@ -192,13 +192,15 @@ fi
 # =============================================================================
 # 4. CONFIGURATION (Themes & Starship)
 # =============================================================================
-echo -e "${YELLOW}Setting up Eza Themes...${NC}"
-rm -rf ~/.config/eza-themes
-git clone https://github.com/eza-community/eza-themes.git ~/.config/eza-themes
-mkdir -p ~/.config/eza
-ln -sf ~/.config/eza-themes/themes/gruvbox-dark.yml ~/.config/eza/theme.yml
+echo -e "${YELLOW}Setting up Configuration...${NC}"
 
-echo -e "${YELLOW}Setting up Starship Config...${NC}"
+# --- Prepare Directories ---
+rm -rf ~/.config/eza-themes
+git clone --quiet https://github.com/eza-community/eza-themes.git ~/.config/eza-themes
+mkdir -p ~/.config/eza
+mkdir -p ~/.config
+
+# --- Install Starship Binary if missing ---
 if ! command -v starship &> /dev/null; then
     if [[ "$OS_TYPE" == "macos" ]]; then
         install_pkg starship
@@ -206,8 +208,91 @@ if ! command -v starship &> /dev/null; then
         curl -sS https://starship.rs/install.sh | sh -s -- -y
     fi
 fi
-mkdir -p ~/.config
-starship preset gruvbox-rainbow -o ~/.config/starship.toml
+
+# --- Theme Arrays ---
+STARSHIP_THEMES=(
+    "gruvbox-rainbow"
+    "nerd-font-symbols"
+    "no-nerd-font"
+    "bracketed-segments"
+    "plain-text-symbols"
+    "no-runtime-versions"
+    "no-empty-icons"
+    "pure-preset"
+    "pastel-powerline"
+    "tokyo-night"
+    "jetpack"
+    "catppuccin-powerline"
+)
+
+EZA_THEMES=(
+    "gruvbox-dark.yml"
+    "black.yml"
+    "catppuccin-frappe.yml"
+    "catppuccin-latte.yml"
+    "catppuccin-macchiato.yml"
+    "catppuccin-mocha.yml"
+    "default.yml"
+    "dracula.yml"
+    "frosty.yml"
+    "gruvbox-light.yml"
+    "one_dark.yml"
+    "rose-pine-dawn.yml"
+    "rose-pine-moon.yml"
+    "rose-pine.yml"
+    "solarized-dark.yml"
+    "tokyonight.yml"
+    "white.yml"
+)
+
+# --- Interactive Menu Logic ---
+# Defaults
+SELECTED_STARSHIP="gruvbox-rainbow"
+SELECTED_EZA="gruvbox-dark.yml"
+
+if [ "$CI_ENV" != "true" ]; then
+    echo -e "\n${CYAN}::: THEME SELECTION :::${NC}"
+    echo "1) Default (Starship: Gruvbox-Rainbow | Eza: Gruvbox-Dark)"
+    echo "2) Custom Selection"
+    echo -ne "${YELLOW}Select option [1-2] (default: 1): ${NC}"
+    read -r THEME_OPT
+
+    if [[ "$THEME_OPT" == "2" ]]; then
+        # 1. Select Starship Theme
+        echo -e "\n${BLUE}:: Select Starship Prompt Theme ::${NC}"
+        PS3="Enter number (1-${#STARSHIP_THEMES[@]}): "
+        select s_theme in "${STARSHIP_THEMES[@]}"; do
+            if [[ -n "$s_theme" ]]; then
+                SELECTED_STARSHIP="$s_theme"
+                break
+            else
+                echo -e "${RED}Invalid selection. Try again.${NC}"
+            fi
+        done
+
+        # 2. Select Eza Theme
+        echo -e "\n${BLUE}:: Select Eza (ls) Theme ::${NC}"
+        PS3="Enter number (1-${#EZA_THEMES[@]}): "
+        select e_theme in "${EZA_THEMES[@]}"; do
+            if [[ -n "$e_theme" ]]; then
+                SELECTED_EZA="$e_theme"
+                break
+            else
+                echo -e "${RED}Invalid selection. Try again.${NC}"
+            fi
+        done
+    else
+        echo -e "${GREEN}>> Using Default Themes.${NC}"
+    fi
+fi
+
+# --- Apply Configuration ---
+echo -e "${YELLOW}Applying Starship Preset: ${SELECTED_STARSHIP}...${NC}"
+starship preset "$SELECTED_STARSHIP" -o ~/.config/starship.toml || \
+    echo -e "${RED}Warning: Failed to load preset '$SELECTED_STARSHIP'. Check starship version.${NC}"
+
+echo -e "${YELLOW}Applying Eza Theme: ${SELECTED_EZA}...${NC}"
+ln -sf "$HOME/.config/eza-themes/themes/${SELECTED_EZA}" "$HOME/.config/eza/theme.yml"
 
 # =============================================================================
 # 5. FONTS (FiraCode Nerd Font)
