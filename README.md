@@ -1,5 +1,6 @@
 # 🐚 Z-SHIFT
 
+
 ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black)
 ![macOS](https://img.shields.io/badge/OS-macOS-000000?style=flat-square&logo=apple&logoColor=white)
 ![Zsh](https://img.shields.io/badge/zsh-%23333333.svg?style=flat-square&logo=zsh&logoColor=white)
@@ -16,6 +17,8 @@
 ![Tealdeer](https://img.shields.io/badge/Docs-Tealdeer-%2320B2AA?style=flat-square&logo=rust&logoColor=white)
 ![Nerd Fonts](https://img.shields.io/badge/Nerd_Fonts-%23333333.svg?style=flat-square&logo=nerdfonts&logoColor=white)
 ![Git](https://img.shields.io/badge/git-%23F05033.svg?style=flat-square&logo=git&logoColor=white)
+![Zsh Startup Time](https://img.shields.io/badge/Startup_Time-%3C100ms-success?style=flat-square&logo=zsh)
+![Input Lag](https://img.shields.io/badge/Input_Lag-~6ms-blue?style=flat-square)
 [![Z-Shift CI](https://github.com/0xdilshan/Z-SHIFT/actions/workflows/ci.yml/badge.svg)](https://github.com/0xdilshan/Z-SHIFT/actions/workflows/ci.yml)
 
 
@@ -27,7 +30,9 @@ It handles the heavy lifting of installing a modern plugin manager, configuring 
 
 [![asciicast](https://asciinema.org/a/qVjPp58itF6FGrI6.svg)](https://asciinema.org/a/qVjPp58itF6FGrI6)
 
- **🚅 High-Performance Zsh + 🌸Gruvbox + ⚡ Zinit + Extra Goodies Installer**
+ ***🚅 High-Performance Zsh + 🌸Gruvbox + ⚡ Zinit + Extra Goodies Installer***
+ 
+ ***⚡ ~20ms core startup time with a total time-to-prompt of under 100ms.***
 
 </div>
 
@@ -43,6 +48,7 @@ It handles the heavy lifting of installing a modern plugin manager, configuring 
 - [🎨 Change Themes](#-change-themes)
 - [📦 Plugin Ecosystem](#-plugin-ecosystem)
 - [🏷️ Persistent Customization](#️-persistent-customization)
+- [⚡ Performance](#-performance)
 - [🗺️ Roadmap](#-roadmap)
 - [🤝 Contributing](#-contributing)
 - [📝 License](#-license)
@@ -149,6 +155,20 @@ Users can now save persistent `LOCAL CUSTOMIZATION` using `~/.zshrc.local` file.
 nano ~/.zshrc.local
 export ZSHIFT_CUSTOM_URL="https://raw.githubusercontent.com/username/repo-name/branch-name/.zshrc"
 ```
+
+------------
+
+## ⚡ Performance
+
+Optimized for speed and low latency. Benchmarked using [zsh-bench](https://github.com/romkatv/zsh-bench).
+
+| Metric | Time |
+| :--- | :--- |
+| **First Prompt** | `98 ms` 🚀 |
+| **Command Lag** | `~100 ms` |
+| **Input Lag** | `6 ms` |
+
+*Achieved by replacing heavy OMZ libraries with Starship and selectively loading plugins using Optimized Zinit plugin manager.*
 
 ------------
 
