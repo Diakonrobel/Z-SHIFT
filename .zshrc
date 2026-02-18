@@ -115,8 +115,13 @@ alias ...='cd ../..'
 alias md='mkdir -p'
 
 # --- Quick Edits ---
+alias sconf='${EDITOR:-nano} ~/.config/starship.toml'
 alias zconf='${EDITOR:-nano} ~/.zshrc'
 alias reload='exec zsh'
+
+# --- Human readable disk usage ---
+alias df='df -h'
+alias du='du -h -d 1' # Disk usage depth 1
 
 # --- Zinit & Maintenance ---
 alias zini='zinit'
