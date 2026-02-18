@@ -149,7 +149,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/t
 
 ## 🏷️ Persistent Customization
 
-Users can now save persistent `LOCAL CUSTOMIZATION` using `~/.zshrc.local` file. Also you can override the update source by setting `ZSHIFT_CUSTOM_URL` in their environment or `~/.zshrc.local`, making it easier for folks running forks to stay in sync with their own repos.
+Users can now save persistent `LOCAL CUSTOMIZATION` using `~/.zshrc.local` file. Also you can override the update source by setting `ZSHIFT_CUSTOM_URL` in environment or `~/.zshrc.local`, making it easier for folks running forks to stay in sync with their own repos.
 
 ```bash
 nano ~/.zshrc.local
