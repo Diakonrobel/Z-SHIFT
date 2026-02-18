@@ -300,17 +300,40 @@ ln -sf "$HOME/.config/eza-themes/themes/${SELECTED_EZA}" "$HOME/.config/eza/them
 if [ "$CI_ENV" = "true" ]; then
     echo -e "${YELLOW}>> CI Environment detected. Skipping Font Installation.${NC}"
 else
-    echo -e "${YELLOW}Installing FiraCode Nerd Font...${NC}"
-    FONT_DIR="$HOME/.local/share/fonts"
-    [[ "$OS_TYPE" == "macos" ]] && FONT_DIR="$HOME/Library/Fonts"
-    
-    TEMP_DIR=$(mktemp -d)
-    mkdir -p "$FONT_DIR"
-    wget -q --show-progress -O "$TEMP_DIR/FiraCode.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/FiraCode.zip"
-    unzip -q "$TEMP_DIR/FiraCode.zip" -d "$TEMP_DIR"
-    mv -f "$TEMP_DIR"/*.ttf "$FONT_DIR/" 2>/dev/null || true
-    rm -rf "$TEMP_DIR"
-    [[ "$OS_TYPE" == "linux" ]] && command -v fc-cache &> /dev/null && fc-cache -f "$FONT_DIR"
+    echo -e "\n${CYAN}::: FONT INSTALLATION :::${NC}"
+    echo -ne "${YELLOW}Install FiraCode Nerd Font? [Y/n] (default: Y): ${NC}"
+    read -r FONT_OPT
+
+    # Check for 'n' or 'N'. All other inputs (including empty Enter) trigger installation.
+    if [[ "$FONT_OPT" =~ ^[Nn]$ ]]; then
+        echo -e "${BLUE}>> Skipping Font Installation.${NC}"
+    else
+        echo -e "${YELLOW}Installing FiraCode Nerd Font...${NC}"
+        
+        # Determine Font Directory
+        if [[ "$OS_TYPE" == "macos" ]]; then
+            FONT_DIR="$HOME/Library/Fonts"
+        else
+            FONT_DIR="$HOME/.local/share/fonts"
+        fi
+        
+        mkdir -p "$FONT_DIR"
+        TEMP_DIR=$(mktemp -d)
+
+        echo -e "${BLUE}Downloading FiraCode.zip...${NC}"
+
+        wget -q --show-progress -O "$TEMP_DIR/FiraCode.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/FiraCode.zip"
+        unzip -q "$TEMP_DIR/FiraCode.zip" -d "$TEMP_DIR"
+        find "$TEMP_DIR" -name "*.ttf" -exec mv -f {} "$FONT_DIR/" \; 2>/dev/null || true
+        rm -rf "$TEMP_DIR"
+        
+        # Refresh Cache (Linux only)
+        if [[ "$OS_TYPE" == "linux" ]] && command -v fc-cache &> /dev/null; then
+            echo -e "${BLUE}Updating font cache...${NC}"
+            fc-cache -f "$FONT_DIR"
+        fi
+        echo -e "${GREEN}✔ Font installation complete.${NC}"
+    fi
 fi
 
 # =============================================================================
