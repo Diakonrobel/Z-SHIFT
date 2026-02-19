@@ -133,13 +133,13 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/t
 
 - ### Core Libraries & Plugins
 
-- **Git:** Essential git aliases.
-- **History:** Optimized history settings for better search and recall.
-- **Directories:** Navigation shortcuts and directory stack management.
-- **Completion:** Tab completion enhanced with `zsh-completions`.
-- **Syntax Highlighting:** Real-time syntax highlighting via `fast-syntax-highlighting`.
-- **Autosuggestions:** Fish-style inline suggestions powered by `zsh-autosuggestions`.
-- **Clipboard:** Cross-platform clipboard integration.
+  - **Git:** Essential git aliases.
+  - **History:** Optimized history settings for better search and recall.
+  - **Directories:** Navigation shortcuts and directory stack management.
+  - **Completion:** Tab completion enhanced with `zsh-completions`.
+  - **Syntax Highlighting:** Real-time syntax highlighting via `fast-syntax-highlighting`.
+  - **Autosuggestions:** Fish-style inline suggestions powered by `zsh-autosuggestions`.
+  - **Clipboard:** Cross-platform clipboard integration.
 
 - ### Power Utilities
 
