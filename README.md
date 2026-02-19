@@ -131,13 +131,15 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/t
 
 **🐚 Z-Shift** comes pre-loaded with a curated selection of the best Zsh plugins, lazy-loaded for speed:
 
-- ### Core Libraries (OMZ)
+- ### Core Libraries & Plugins
 
-  - **Git:** Essential git aliases and functions.
-  - **History:** optimized history settings.
-  - **Directories:** Navigation shortcuts and stack management.
-  - **Completion:** Robust tab completion.
-  - **Clipboard:** Cross-platform clipboard integration.
+- **Git:** Essential git aliases.
+- **History:** Optimized history settings for better search and recall.
+- **Directories:** Navigation shortcuts and directory stack management.
+- **Completion:** Tab completion enhanced with `zsh-completions`.
+- **Syntax Highlighting:** Real-time syntax highlighting via `fast-syntax-highlighting`.
+- **Autosuggestions:** Fish-style inline suggestions powered by `zsh-autosuggestions`.
+- **Clipboard:** Cross-platform clipboard integration.
 
 - ### Power Utilities
 
@@ -149,7 +151,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/t
 
 ## 🏷️ Persistent Customization
 
-Users can now save persistent `LOCAL CUSTOMIZATION` using `~/.zshrc.local` file. Also you can override the update source by setting `ZSHIFT_CUSTOM_URL` in their environment or `~/.zshrc.local`, making it easier for folks running forks to stay in sync with their own repos.
+Users can now save persistent `LOCAL CUSTOMIZATION` using `~/.zshrc.local` file. Also you can override the update source by setting `ZSHIFT_CUSTOM_URL` in environment or `~/.zshrc.local`, making it easier for folks running forks to stay in sync with their own repos.
 
 ```bash
 nano ~/.zshrc.local
