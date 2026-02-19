@@ -15,7 +15,7 @@
 set -e
 
 # --- CONFIGURATION ---
-ZSHRC_URL="https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/.zshrc"
+ZSHRC_URL="${ZSHIFT_CUSTOM_URL:-https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/.zshrc}"
 
 # Colors for output
 GREEN='\033[0;32m'

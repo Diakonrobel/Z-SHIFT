@@ -175,7 +175,7 @@ zshift-update() {
     BACKUP_FILE="$HOME/.zshrc.zshift_${DATE_STAMP}.bak"
     TEMP_ZSHRC="$(mktemp)"
     # Ensure you update your repo to host this NEW safe version before running this!
-    UPDATE_URL="https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/.zshrc"
+    UPDATE_URL="${ZSHIFT_CUSTOM_URL:-https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/.zshrc}"
 
     echo -e "${BLUE}:: Initiating Z-Shift Update...${NC}"
 
