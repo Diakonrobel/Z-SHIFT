@@ -141,7 +141,8 @@ else
 fi
 
 # --- The Modern Toolset ---
-alias cat='bat -pp'
+alias cat='bat -p --paging=never'
+alias catp='bat'
 alias grep='grep --color=auto'
 alias h='tldr'
 alias hup='tldr --update'
