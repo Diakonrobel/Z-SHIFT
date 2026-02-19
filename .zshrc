@@ -142,8 +142,7 @@ fi
 
 # --- The Modern Toolset ---
 alias cat='bat -pp'
-alias grep='rg'
-alias find='fd'
+alias grep='grep --color=auto'
 alias h='tldr'
 alias hup='tldr --update'
 
