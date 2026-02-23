@@ -11,7 +11,6 @@ source "${ZINIT_HOME}/zinit.zsh"
 # =============================================================================
 # 2. LOAD STARSHIP PROMPT
 # =============================================================================
-# Optimization: Generates init.zsh on install/update to avoid 'eval' at runtime
 zinit ice as"command" from"gh-r" \
           atclone"./starship init zsh > init.zsh; ./starship completions zsh > _starship" \
           atpull"%atclone" \
@@ -45,9 +44,11 @@ zinit ice as"program" from"gh-r" mv"fd* -> fd" pick"fd/fd" wait lucid
 zinit light sharkdp/fd
 
 # --- FZF (Fuzzy Finder) ---
-# Standard, stable loading.
 zinit ice as"program" from"gh-r" wait lucid \
-    atload'source <(fzf --zsh); export FZF_DEFAULT_COMMAND="fd --type f --strip-cwd-prefix --hidden --follow --exclude .git"; export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"'
+    atclone"./fzf --zsh > init.zsh" \
+    atpull"%atclone" \
+    src"init.zsh" \
+    atload'export FZF_DEFAULT_COMMAND="fd --type f --strip-cwd-prefix --hidden --follow --exclude .git"; export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"'
 zinit light junegunn/fzf
 
 # --- RIPGREP (Grep replacement) ---
@@ -59,7 +60,7 @@ zinit ice wait lucid as"command" from"gh-r" mv"tealdeer* -> tldr" pick"tldr"
 zinit light tealdeer-rs/tealdeer
 
 # --- Zoxide (Smarter cd) ---
-zinit ice wait lucid as"program" from"gh-r" pick"zoxide" \
+zinit ice as"program" from"gh-r" pick"zoxide" \
     atclone"./zoxide init zsh --cmd cd > init.zsh" \
     atpull"%atclone" \
     src"init.zsh" nocompile"init.zsh"
@@ -72,17 +73,20 @@ zinit wait lucid blockf atpull"zinit creinstall -q ." for \
     zsh-users/zsh-completions
 
 # Syntax Highlighting & Autosuggestions
+# IMPORTANT ORDER: compinit -> fzf-tab -> syntax-highlighting -> autosuggestions
 zinit wait lucid for \
     atinit"zicompinit; zicdreplay" \
-        zdharma-continuum/fast-syntax-highlighting \
+    atload"[[ ! -s ~/.zcompdump.zwc || ~/.zcompdump -nt ~/.zcompdump.zwc ]] && zcompile ~/.zcompdump" \
+        Aloxaf/fzf-tab \
+    zdharma-continuum/fast-syntax-highlighting \
     atload"_zsh_autosuggest_start" \
         zsh-users/zsh-autosuggestions
 
 # =============================================================================
 # 4. CONFIGURATION
 # =============================================================================
-HISTSIZE=10000
-SAVEHIST=10000
+HISTSIZE=20000
+SAVEHIST=20000
 HISTFILE=~/.zsh_history
 setopt HIST_IGNORE_DUPS
 setopt HIST_EXPIRE_DUPS_FIRST
@@ -103,6 +107,13 @@ zstyle ':completion:*:*:*:*:*' menu select
 # Group results by category
 zstyle ':completion:*' group-name ''
 zstyle ':completion:::::' completer _expand _complete _ignored _approximate
+# --- fzf-tab Styling ---
+# Set descriptions format to enable group support in fzf-tab
+zstyle ':completion:*:descriptions' format '[%d]'
+# Preview directory contents with eza when completing cd
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
+# Switch completion groups using `<` and `>`
+zstyle ':fzf-tab:*' switch-group '<' '>'
 
 # =============================================================================
 # 5. ALIASES & FUNCTIONS
@@ -214,6 +225,13 @@ zshift-update() {
     echo -e "\n${GREEN}✔ Z-Shift Update Complete! Restarting shell...${NC}"
     exec zsh
 }
+
+# =============================================================================
+# 7. BYTE-COMPILATION
+# =============================================================================
+if [[ ! -s "$HOME/.zshrc.zwc" || "$HOME/.zshrc" -nt "$HOME/.zshrc.zwc" ]]; then
+    zcompile "$HOME/.zshrc"
+fi
 
 # =============================================================================
 # LOCAL CUSTOMIZATIONS
