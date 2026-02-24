@@ -32,7 +32,7 @@ It handles the heavy lifting of installing a modern plugin manager, configuring 
 
  ***🚅 High-Performance Zsh + 🌸Gruvbox + ⚡ Zinit + Extra Goodies Installer***
  
- ***⚡ ~20ms core startup time with a total time-to-prompt of under 100ms.***
+ ***⚡ ~20ms core startup time with a total time-to-prompt of under 70ms.***
 
 </div>
 
@@ -167,9 +167,11 @@ Optimized for speed and low latency. Benchmarked using [zsh-bench](https://githu
 
 | Metric | Time |
 | :--- | :--- |
-| **First Prompt** | `98 ms` 🚀 |
-| **Command Lag** | `~100 ms` |
-| **Input Lag** | `6 ms` |
+| **First Prompt** | `~69 ms` 🚀 |
+| **Command Lag** | `~70 ms` |
+| **Input Lag** | `~3 ms` |
+
+![benchmark](benchmark/z-shift-bench.webp)
 
 *Achieved by replacing heavy OMZ libraries with Starship and selectively loading plugins using Optimized Zinit plugin manager.*
 
