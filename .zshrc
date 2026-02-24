@@ -145,6 +145,7 @@ alias du='du -h -d 1' # Disk usage depth 1
 
 # --- Zinit & Maintenance ---
 alias zini='zinit'
+unalias zi zpl zplg 2>/dev/null
 alias zup='zinit self-update && zinit update --parallel && zinit cclear && tldr --update'
 alias zclean='zinit cclear && zinit delete --clean'
 
@@ -200,7 +201,7 @@ zshift-update() {
     DATE_STAMP=$(date +%Y%m%d_%H%M%S)
     BACKUP_FILE="$HOME/.zshrc.zshift_${DATE_STAMP}.bak"
     TEMP_ZSHRC="$(mktemp)"
-    
+
     UPDATE_URL="${ZSHIFT_CUSTOM_URL:-https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/.zshrc}"
 
     echo -e "${BLUE}:: Initiating Z-Shift Update...${NC}"
@@ -240,6 +241,8 @@ zshift-update() {
     echo -e "\n${GREEN}✔ Z-Shift Update Complete! Restarting shell...${NC}"
     exec zsh
 }
+
+alias zsu='zshift-update'
 
 # =============================================================================
 # 7. BYTE-COMPILATION & LOCAL CUSTOMIZATIONS
