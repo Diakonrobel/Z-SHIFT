@@ -272,6 +272,12 @@ starship preset "$SELECTED_STARSHIP" -o ~/.config/starship.toml > /dev/null 2>&1
 echo -e "${YELLOW}Applying Eza Theme: ${SELECTED_EZA}...${NC}"
 ln -sf "$HOME/.config/eza-themes/themes/${SELECTED_EZA}" "$HOME/.config/eza/theme.yml"
 
+# --- Zsh Environment Optimization ---
+echo -e "${YELLOW}Optimizing Zsh startup...${NC}"
+if ! grep -q "skip_global_compinit=1" ~/.zshenv 2>/dev/null; then
+    echo 'skip_global_compinit=1' >> ~/.zshenv
+fi
+
 # =============================================================================
 # 5. FONTS (FiraCode Nerd Font)
 # =============================================================================
