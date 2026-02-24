@@ -75,28 +75,26 @@ jobs:
             exit 1
           fi
 
-      - name: Verify Core Tools Installed (Zinit store)
-        run: |
           ZINIT_PLUGINS="${HOME}/.local/share/zinit/plugins"
-          MISSING=()
-          declare -A TOOL_DIRS=(
-            [eza]="eza-community---eza"
-            [bat]="sharkdp---bat"
-            [fzf]="junegunn---fzf"
-            [zoxide]="ajeetdsouza---zoxide"
-            [starship]="starship---starship"
-          )
-          for tool in "${!TOOL_DIRS[@]}"; do
-            dir="$ZINIT_PLUGINS/${TOOL_DIRS[$tool]}"
-            if find "$dir" -maxdepth 1 -name "$tool" -type f 2>/dev/null | grep -q .; then
-              echo "PASS: $tool found in Zinit store"
+          MISSING=0
+          # "dir:binary" pairs — no associative arrays, compatible with bash 3 (macOS)
+          for spec in \
+            "eza-community---eza:eza" \
+            "sharkdp---bat:bat" \
+            "junegunn---fzf:fzf" \
+            "ajeetdsouza---zoxide:zoxide" \
+            "starship---starship:starship"; do
+            dir="${spec%%:*}"
+            bin="${spec##*:}"
+            if find "$ZINIT_PLUGINS/$dir" -maxdepth 1 -name "$bin" -type f 2>/dev/null | grep -q .; then
+              echo "PASS: $bin found in Zinit store"
             else
-              echo "WARN: $tool not found in Zinit store (${dir})"
-              MISSING+=("$tool")
+              echo "WARN: $bin not found ($ZINIT_PLUGINS/$dir)"
+              MISSING=$((MISSING + 1))
             fi
           done
-          if [ "${#MISSING[@]}" -ge 3 ]; then
-            echo "Error: Too many tools missing from Zinit store: ${MISSING[*]}"
+          if [ "$MISSING" -ge 3 ]; then
+            echo "Error: Too many tools missing from Zinit store"
             exit 1
           fi
 

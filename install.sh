@@ -11,7 +11,7 @@
 #  Z-SHIFT: High-Performance Zsh + Starship + Zinit installation script
 # =============================================================================
 
-# Removed bare 'set -e' in favour of explicit checks on critical commands — 
+# Removed bare 'set -e' in favour of explicit checks on critical commands
 # 'set -e' interacts poorly with subshells and conditional logic.
 set -uo pipefail
 
