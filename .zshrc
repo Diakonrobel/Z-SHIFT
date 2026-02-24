@@ -73,7 +73,7 @@ zinit wait lucid blockf atpull"zinit creinstall -q ." for \
 
 # 2. FZF-Tab (Replaces standard completion menu)
 zinit wait lucid atinit"zicompinit; zicdreplay" \
-    atload"[[ ! -s ~/.zcompdump.zwc || ~/.zcompdump -nt ~/.zcompdump.zwc ]] && zcompile ~/.zcompdump &!" \
+    atload'compdump="${ZSH_COMPDUMP:-${ZDOTDIR:-$HOME}/.zcompdump}"; [[ ! -s "${compdump}.zwc" || "$compdump" -nt "${compdump}.zwc" ]] && zcompile "$compdump" &!' \
     for Aloxaf/fzf-tab
 
 # 3. Syntax Highlighting (Must load after completions)
