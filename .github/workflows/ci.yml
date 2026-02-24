@@ -12,7 +12,6 @@ on:
 jobs:
   # -----------------------------------------------------------------------------
   # JOB 1: STATIC ANALYSIS (LINTING)
-  # CI and local test use identical rules without duplicating the ignore list.
   # -----------------------------------------------------------------------------
   lint:
     runs-on: ubuntu-latest
@@ -65,10 +64,9 @@ jobs:
             exit 1
           fi
 
-      # Run zsh once to trigger the Zinit git clone inside .zshrc.
       - name: Bootstrap Zinit (Initialize Zsh)
         run: |
-          zsh -ic "exit" 2>&1 || echo "Note: zsh bootstrap exited non-zero (likely async plugin load — see output above)"
+          TERM=xterm-256color zsh -ic "exit" 2>&1 || echo "Note: zsh bootstrap exited non-zero (likely async plugin load — see output above)"
 
       - name: Verify Zinit Installed
         run: |
@@ -77,21 +75,28 @@ jobs:
             exit 1
           fi
 
-
-      - name: Verify Core Tools Installed
+      - name: Verify Core Tools Installed (Zinit store)
         run: |
+          ZINIT_PLUGINS="${HOME}/.local/share/zinit/plugins"
           MISSING=()
-          for tool in eza bat fzf zoxide starship; do
-            if zsh -ic "command -v $tool" > /dev/null 2>&1; then
-              echo "PASS: $tool found"
+          declare -A TOOL_DIRS=(
+            [eza]="eza-community---eza"
+            [bat]="sharkdp---bat"
+            [fzf]="junegunn---fzf"
+            [zoxide]="ajeetdsouza---zoxide"
+            [starship]="starship---starship"
+          )
+          for tool in "${!TOOL_DIRS[@]}"; do
+            dir="$ZINIT_PLUGINS/${TOOL_DIRS[$tool]}"
+            if find "$dir" -maxdepth 1 -name "$tool" -type f 2>/dev/null | grep -q .; then
+              echo "PASS: $tool found in Zinit store"
             else
-              echo "WARN: $tool not found (may still be loading via Zinit turbo)"
+              echo "WARN: $tool not found in Zinit store (${dir})"
               MISSING+=("$tool")
             fi
           done
-          # Fail if more than half the tools are missing — something went wrong.
           if [ "${#MISSING[@]}" -ge 3 ]; then
-            echo "Error: Too many tools missing: ${MISSING[*]}"
+            echo "Error: Too many tools missing from Zinit store: ${MISSING[*]}"
             exit 1
           fi
 
@@ -120,7 +125,8 @@ jobs:
             # --- ARCH LINUX ---
             if [ -f /etc/arch-release ]; then
               pacman -Sy --noconfirm archlinux-keyring
-              pacman -Syu --noconfirm git curl wget unzip sudo which base-devel ca-certificates
+              # 'file' required by Zinit ziextract for archive type detection
+              pacman -Syu --noconfirm git curl wget unzip sudo which base-devel ca-certificates file
               useradd -m -s /bin/bash tester
               echo 'tester ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
             fi
@@ -128,7 +134,9 @@ jobs:
             # --- FEDORA ---
             if [ -f /etc/fedora-release ]; then
               dnf upgrade -y --refresh
-              dnf install -y git curl wget unzip sudo util-linux-user which findutils dnf-plugins-core ca-certificates
+              # 'file' required by Zinit ziextract — without it every gh-r download
+              # (bat, fzf, fd, rg, zoxide) fails mid-extract with 'command not found: file'
+              dnf install -y git curl wget unzip sudo util-linux-user which findutils dnf-plugins-core ca-certificates file
               dnf install -y eza || (dnf copr enable -y piegames/eza && dnf install -y eza)
               useradd -m -s /bin/bash tester
               echo 'tester ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
@@ -156,7 +164,7 @@ jobs:
               exit 1
             fi
 
-            su tester -c 'zsh -ic exit' 2>&1 || echo 'Note: zsh bootstrap exited non-zero'
+            su tester -c 'TERM=xterm-256color zsh -ic exit' 2>&1 || echo 'Note: zsh bootstrap exited non-zero'
 
             if [ -d /home/tester/.local/share/zinit ]; then
               echo 'SUCCESS: Zinit installed'
@@ -165,18 +173,21 @@ jobs:
               exit 1
             fi
 
-            echo -e \"\${GREEN}>>> 5. VERIFY: Checking tool availability...\${NC}\"
+            echo -e \"\${GREEN}>>> 5. VERIFY: Checking Zinit plugin store...\${NC}\"
+            ZINIT_PLUGINS=\"/home/tester/.local/share/zinit/plugins\"
             MISSING=0
-            for tool in eza starship; do
-              if su tester -c \"zsh -ic 'command -v $tool'\" > /dev/null 2>&1; then
-                echo \"SUCCESS: \$tool found\"
+            for spec in \"eza-community---eza:eza\" \"starship---starship:starship\" \"sharkdp---bat:bat\" \"junegunn---fzf:fzf\"; do
+              dir=\"\${spec%%:*}\"
+              bin=\"\${spec##*:}\"
+              if find \"\$ZINIT_PLUGINS/\$dir\" -maxdepth 1 -name \"\$bin\" -type f 2>/dev/null | grep -q .; then
+                echo \"SUCCESS: \$bin found in Zinit store\"
               else
-                echo \"WARN: \$tool not found\"
+                echo \"WARN: \$bin not found (\$ZINIT_PLUGINS/\$dir)\"
                 MISSING=\$((MISSING + 1))
               fi
             done
-            if [ \"\$MISSING\" -ge 2 ]; then
-              echo 'FAILURE: Too many tools missing'
+            if [ \"\$MISSING\" -ge 3 ]; then
+              echo 'FAILURE: Too many tools missing from Zinit store'
               exit 1
             fi
           "
