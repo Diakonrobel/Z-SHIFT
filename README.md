@@ -17,8 +17,8 @@
 ![Tealdeer](https://img.shields.io/badge/Docs-Tealdeer-%2320B2AA?style=flat-square&logo=rust&logoColor=white)
 ![Nerd Fonts](https://img.shields.io/badge/Nerd_Fonts-%23333333.svg?style=flat-square&logo=nerdfonts&logoColor=white)
 ![Git](https://img.shields.io/badge/git-%23F05033.svg?style=flat-square&logo=git&logoColor=white)
-![Zsh Startup Time](https://img.shields.io/badge/Startup_Time-%3C100ms-success?style=flat-square&logo=zsh)
-![Input Lag](https://img.shields.io/badge/Input_Lag-~6ms-blue?style=flat-square)
+![Zsh Startup Time](https://img.shields.io/badge/Startup_Time-%3C70ms-success?style=flat-square&logo=zsh)
+![Input Lag](https://img.shields.io/badge/Input_Lag-~3ms-blue?style=flat-square)
 [![Z-Shift CI](https://github.com/0xdilshan/Z-SHIFT/actions/workflows/ci.yml/badge.svg)](https://github.com/0xdilshan/Z-SHIFT/actions/workflows/ci.yml)
 
 
@@ -32,7 +32,7 @@ It handles the heavy lifting of installing a modern plugin manager, configuring 
 
  ***🚅 High-Performance Zsh + 🌸Gruvbox + ⚡ Zinit + Extra Goodies Installer***
  
- ***⚡ ~20ms core startup time with a total time-to-prompt of under 100ms.***
+ ***⚡ ~20ms core startup time with a total time-to-prompt of under 70ms.***
 
 </div>
 
@@ -136,7 +136,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/t
   - **Git:** Essential git aliases.
   - **History:** Optimized history settings for better search and recall.
   - **Directories:** Navigation shortcuts and directory stack management.
-  - **Completion:** Tab completion enhanced with `zsh-completions`.
+  - **Completion:** Tab completion enhanced with `zsh-completions` & `fzf-tab`.
   - **Syntax Highlighting:** Real-time syntax highlighting via `fast-syntax-highlighting`.
   - **Autosuggestions:** Fish-style inline suggestions powered by `zsh-autosuggestions`.
   - **Clipboard:** Cross-platform clipboard integration.
@@ -166,9 +166,11 @@ Optimized for speed and low latency. Benchmarked using [zsh-bench](https://githu
 
 | Metric | Time |
 | :--- | :--- |
-| **First Prompt** | `98 ms` 🚀 |
-| **Command Lag** | `~100 ms` |
-| **Input Lag** | `6 ms` |
+| **First Prompt** | `~69 ms` 🚀 |
+| **Command Lag** | `~70 ms` |
+| **Input Lag** | `~3 ms` |
+
+![benchmark](benchmark/z-shift-bench.webp)
 
 *Achieved by replacing heavy OMZ libraries with Starship and selectively loading plugins using Optimized Zinit plugin manager.*
 
