@@ -145,9 +145,14 @@ alias du='du -h -d 1' # Disk usage depth 1
 
 # --- Zinit & Maintenance ---
 alias zini='zinit'
-unalias zi zpl zplg 2>/dev/null
 alias zup='zinit self-update && zinit update --parallel && zinit cclear && tldr --update'
 alias zclean='zinit cclear && zinit delete --clean'
+
+# This avoids a noisy warning if the aliases were never set.
+
+(( ${+aliases[zi]}  )) && unalias zi
+(( ${+aliases[zpl]} )) && unalias zpl
+(( ${+aliases[zplg]})) && unalias zplg
 
 # --- Eza (The ls replacement) ---
 if [[ -n "${commands[eza]}" ]]; then
@@ -222,6 +227,19 @@ zshift-update() {
     if [ -f "$HOME/.zshrc" ]; then
         echo -e "${YELLOW}:: Backing up current config to: ${NC}$BACKUP_FILE"
         cp "$HOME/.zshrc" "$BACKUP_FILE"
+    fi
+
+    # Warn the user if their current .zshrc differs from the backup,
+    if [ -f "$BACKUP_FILE" ] && ! diff -q "$HOME/.zshrc" "$BACKUP_FILE" > /dev/null 2>&1; then
+        echo -e "${YELLOW}!! Warning: Your .zshrc has local modifications.${NC}"
+        echo -e "${YELLOW}   These will be replaced. Move personal config to ~/.zshrc.local to preserve it.${NC}"
+        echo -ne "${YELLOW}   Continue anyway? [y/N]: ${NC}"
+        read -r REPLY
+        if [[ ! "$REPLY" =~ ^[Yy]$ ]]; then
+            echo -e "${BLUE}:: Update cancelled.${NC}"
+            rm -f "$TEMP_ZSHRC"
+            return 0
+        fi
     fi
 
     mv "$TEMP_ZSHRC" "$HOME/.zshrc"
