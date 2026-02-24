@@ -1,0 +1,12 @@
+# .shellcheckrc: Shared Shellcheck configuration for Z-Shift
+# FIX #12: Centralises ignore rules so CI (ci.yml) and local tests
+# (tests/local_test.sh) use identical linting settings without duplication.
+
+# SC2086: Double-quoting variables — suppressed for flexibility in install_pkg
+disable=SC2086
+
+# SC2034: Variable appears unused — suppressed for sourced env vars
+disable=SC2034
+
+# SC1091: Not following sourced files — suppressed for /etc/os-release
+disable=SC1091
