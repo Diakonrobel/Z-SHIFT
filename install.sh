@@ -11,8 +11,9 @@
 #  Z-SHIFT: High-Performance Zsh + Starship + Zinit installation script
 # =============================================================================
 
-# Exit immediately if a command exits with a non-zero status
-set -e
+# Removed bare 'set -e' in favour of explicit checks on critical commands — 
+# 'set -e' interacts poorly with subshells and conditional logic.
+set -uo pipefail
 
 # --- COLORS ---
 GREEN='\033[0;32m'
@@ -20,24 +21,22 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 RED='\033[0;31m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 # --- ROOT CHECK ---
-# Prevent running the script as root (unless in CI) to protect user's $HOME permissions
-if [ "$EUID" -eq 0 ] && [ "$CI_ENV" != "true" ]; then
+if [ "$EUID" -eq 0 ] && [ "${CI_ENV:-}" != "true" ]; then
     echo -e "${RED}Please do not run this script as root or with sudo.${NC}"
     echo -e "${YELLOW}The script will prompt for your sudo password when needed.${NC}"
     exit 1
 fi
 
 # --- GLOBAL VARIABLES & CLEANUP TRAP ---
-TEMP_DIR=""
+TEMP_DIRS=()
 
 cleanup() {
-    # This runs automatically on script exit, interruption, or termination
-    if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
-        rm -rf "$TEMP_DIR"
-    fi
+    for d in "${TEMP_DIRS[@]}"; do
+        [ -n "$d" ] && [ -d "$d" ] && rm -rf "$d"
+    done
 }
 trap cleanup EXIT INT TERM
 
@@ -64,7 +63,6 @@ fi
 
 echo -e "${BLUE}Detected OS: ${OS_TYPE} (${DISTRO})${NC}"
 
-# Helper function to install packages silently based on distro
 install_pkg() {
     local pkgs=("$@")
     echo -e "${YELLOW}Installing: ${pkgs[*]}...${NC}"
@@ -100,9 +98,9 @@ install_pkg() {
 if [[ "$OS_TYPE" == "macos" ]]; then
     if ! command -v brew &> /dev/null; then
         echo -e "${YELLOW}Homebrew not found. Installing Homebrew (this may take a while)...${NC}"
-        # Silencing homebrew installation logs but keeping stderr
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" > /dev/null
-        
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" > /dev/null || {
+            echo -e "${RED}Homebrew installation failed.${NC}"; exit 1
+        }
         if [ -f "/opt/homebrew/bin/brew" ]; then
             eval "$(/opt/homebrew/bin/brew shellenv)"
         elif [ -f "/usr/local/bin/brew" ]; then
@@ -116,13 +114,11 @@ fi
 # =============================================================================
 echo -e "${YELLOW}Installing base dependencies...${NC}"
 
-# Define dependencies as an array to prevent word-splitting issues
 COMMON_DEPS=(git curl unzip zsh)
 
 if [[ "$OS_TYPE" == "macos" ]]; then
     install_pkg git curl wget unzip zsh
 else
-    # Linux specific checks: using 'gnupg' for cross-distro compatibility
     install_pkg wget gnupg "${COMMON_DEPS[@]}"
 fi
 
@@ -170,9 +166,12 @@ else
                 FILENAME="eza_${BINARY_ARCH}.tar.gz"
                 URL="https://github.com/eza-community/eza/releases/latest/download/${FILENAME}"
 
-                # Download silently (-sS) and extract securely using a temp dir
                 EZA_TMP=$(mktemp -d)
-                curl -sSL "$URL" | tar -xz -C "$EZA_TMP"
+                TEMP_DIRS+=("$EZA_TMP")
+
+                curl -sSL "$URL" | tar -xz -C "$EZA_TMP" || {
+                    echo -e "${RED}Error: Failed to download/extract eza binary.${NC}"; exit 1
+                }
 
                 if [ -f "$EZA_TMP/eza" ]; then
                     sudo mv "$EZA_TMP/eza" /usr/local/bin/eza
@@ -180,10 +179,8 @@ else
                     echo -e "${GREEN}:: eza installed successfully to /usr/local/bin/eza${NC}"
                 else
                     echo -e "${RED}Error: Binary 'eza' not found in archive.${NC}"
-                    rm -rf "$EZA_TMP"
                     exit 1
                 fi
-                rm -rf "$EZA_TMP"
             else
                 sudo dnf install -q -y eza > /dev/null
             fi
@@ -200,24 +197,23 @@ fi
 # =============================================================================
 echo -e "${YELLOW}Setting up Configuration...${NC}"
 
-# --- Prepare Directories ---
 rm -rf "$HOME/.config/eza-themes"
-# Clone silently
 git clone --quiet https://github.com/eza-community/eza-themes.git "$HOME/.config/eza-themes" > /dev/null 2>&1
 mkdir -p "$HOME/.config/eza"
 mkdir -p "$HOME/.config"
 
-# --- Install Starship Binary if missing ---
-if ! command -v starship &> /dev/null; then
+if command -v starship &> /dev/null; then
+    echo -e "${GREEN}:: Starship is already installed. Skipping.${NC}"
+else
     if [[ "$OS_TYPE" == "macos" ]]; then
         install_pkg starship
     else
-        # Install starship silently
-        curl -sS https://starship.rs/install.sh | sh -s -- -y > /dev/null
+        curl -sS https://starship.rs/install.sh | sh -s -- -y > /dev/null || {
+            echo -e "${RED}Starship installation failed.${NC}"; exit 1
+        }
     fi
 fi
 
-# --- Theme Arrays ---
 STARSHIP_THEMES=(
     "gruvbox-rainbow" "nerd-font-symbols" "no-nerd-font"
     "bracketed-segments" "plain-text-symbols" "no-runtime-versions"
@@ -233,11 +229,10 @@ EZA_THEMES=(
     "rose-pine.yml" "solarized-dark.yml" "tokyonight.yml" "white.yml"
 )
 
-# --- Interactive Menu Logic ---
 SELECTED_STARSHIP="gruvbox-rainbow"
 SELECTED_EZA="gruvbox-dark.yml"
 
-if [ "$CI_ENV" != "true" ]; then
+if [ "${CI_ENV:-}" != "true" ]; then
     if [ ! -t 0 ]; then
         exec < /dev/tty
     fi
@@ -275,7 +270,6 @@ if [ "$CI_ENV" != "true" ]; then
     fi
 fi
 
-# --- Apply Configuration ---
 echo -e "${YELLOW}Applying Starship Preset: ${SELECTED_STARSHIP}...${NC}"
 starship preset "$SELECTED_STARSHIP" -o "$HOME/.config/starship.toml" > /dev/null 2>&1 || \
     echo -e "${RED}Warning: Failed to load preset '$SELECTED_STARSHIP'. Check starship version.${NC}"
@@ -283,7 +277,6 @@ starship preset "$SELECTED_STARSHIP" -o "$HOME/.config/starship.toml" > /dev/nul
 echo -e "${YELLOW}Applying Eza Theme: ${SELECTED_EZA}...${NC}"
 ln -sf "$HOME/.config/eza-themes/themes/${SELECTED_EZA}" "$HOME/.config/eza/theme.yml"
 
-# --- Zsh Environment Optimization ---
 echo -e "${YELLOW}Optimizing Zsh startup...${NC}"
 if ! grep -q "skip_global_compinit=1" "$HOME/.zshenv" 2>/dev/null; then
     echo 'skip_global_compinit=1' >> "$HOME/.zshenv"
@@ -292,43 +285,58 @@ fi
 # =============================================================================
 # 5. FONTS (FiraCode Nerd Font)
 # =============================================================================
-if [ "$CI_ENV" = "true" ]; then
+if [ "${CI_ENV:-}" = "true" ]; then
     echo -e "${YELLOW}>> CI Environment detected. Skipping Font Installation.${NC}"
 else
     if [ ! -t 0 ]; then
         exec < /dev/tty
     fi
 
-    echo -e "\n${CYAN}::: FONT INSTALLATION :::${NC}"
-    echo -ne "${YELLOW}Install FiraCode Nerd Font? [Y/n] (default: Y): ${NC}"
-    read -r FONT_OPT
-
-    if [[ "$FONT_OPT" =~ ^[Nn]$ ]]; then
-        echo -e "${BLUE}>> Skipping Font Installation.${NC}"
+    if [[ "$OS_TYPE" == "macos" ]]; then
+        FONT_DIR="$HOME/Library/Fonts"
     else
-        echo -e "${YELLOW}Installing FiraCode Nerd Font...${NC}"
-        
-        if [[ "$OS_TYPE" == "macos" ]]; then
-            FONT_DIR="$HOME/Library/Fonts"
-        else
-            FONT_DIR="$HOME/.local/share/fonts"
-        fi
-        
-        mkdir -p "$FONT_DIR"
-        TEMP_DIR=$(mktemp -d)
+        FONT_DIR="$HOME/.local/share/fonts"
+    fi
 
-        # Removed --show-progress to prevent progress bar spam, replacing it with quiet download
-        wget -q -O "$TEMP_DIR/FiraCode.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/FiraCode.zip"
-        unzip -q "$TEMP_DIR/FiraCode.zip" -d "$TEMP_DIR"
-        find "$TEMP_DIR" -name "*.ttf" -exec mv -f {} "$FONT_DIR/" \; 2>/dev/null || true
-        
-        # Immediate cleanup via explicit call (Trap will also handle this if it fails before this line)
-        [ -n "$TEMP_DIR" ] && rm -rf "$TEMP_DIR" && TEMP_DIR=""
-        
-        if [[ "$OS_TYPE" == "linux" ]] && command -v fc-cache &> /dev/null; then
-            fc-cache -f -q "$FONT_DIR" > /dev/null 2>&1
+    if ls "$FONT_DIR"/FiraCode* >/dev/null 2>&1; then
+        echo -e "${GREEN}:: FiraCode Nerd Font already installed. Skipping.${NC}"
+    else
+        echo -e "\n${CYAN}::: FONT INSTALLATION :::${NC}"
+        echo -ne "${YELLOW}Install FiraCode Nerd Font? [Y/n] (default: Y): ${NC}"
+        read -r FONT_OPT
+
+        if [[ "$FONT_OPT" =~ ^[Nn]$ ]]; then
+            echo -e "${BLUE}>> Skipping Font Installation.${NC}"
+        else
+            echo -e "${YELLOW}Installing FiraCode Nerd Font...${NC}"
+
+            mkdir -p "$FONT_DIR"
+
+            FONT_VER=$(curl -fsSL "https://api.github.com/repos/ryanoasis/nerd-fonts/releases/latest" \
+                | grep '"tag_name"' | cut -d'"' -f4)
+            if [ -z "$FONT_VER" ]; then
+                echo -e "${YELLOW}Warning: Could not determine latest font version. Falling back to v3.4.0.${NC}"
+                FONT_VER="v3.4.0"
+            fi
+
+            FONT_TMP=$(mktemp -d)
+            TEMP_DIRS+=("$FONT_TMP")
+
+            wget -q -O "$FONT_TMP/FiraCode.zip" \
+                "https://github.com/ryanoasis/nerd-fonts/releases/download/${FONT_VER}/FiraCode.zip" || {
+                echo -e "${RED}Font download failed. Skipping.${NC}"
+            }
+
+            if [ -f "$FONT_TMP/FiraCode.zip" ]; then
+                unzip -q "$FONT_TMP/FiraCode.zip" -d "$FONT_TMP"
+                find "$FONT_TMP" -name "*.ttf" -exec mv -f {} "$FONT_DIR/" \; 2>/dev/null || true
+
+                if [[ "$OS_TYPE" == "linux" ]] && command -v fc-cache &> /dev/null; then
+                    fc-cache -f -q "$FONT_DIR" > /dev/null 2>&1
+                fi
+                echo -e "${GREEN}✔ Font installation complete (${FONT_VER}).${NC}"
+            fi
         fi
-        echo -e "${GREEN}✔ Font installation complete.${NC}"
     fi
 fi
 
@@ -356,7 +364,7 @@ if [ -z "$ZSH_PATH" ]; then
     exit 1
 fi
 
-if [ "$CI_ENV" = "true" ]; then
+if [ "${CI_ENV:-}" = "true" ]; then
     echo -e "\n${GREEN}✔ CI Environment detected. Installation Verified!${NC}"
     exit 0
 fi
@@ -367,9 +375,17 @@ fi
 
 if [ "$SHELL" != "$ZSH_PATH" ]; then
     if [[ "$OS_TYPE" == "macos" ]]; then
-        chsh -s "$ZSH_PATH" > /dev/null 2>&1
+        if ! chsh -s "$ZSH_PATH" 2>&1; then
+            echo -e "${YELLOW}Warning: Could not set Zsh as default shell automatically.${NC}"
+            echo -e "${YELLOW}Run manually: chsh -s ${ZSH_PATH}${NC}"
+        fi
     else
-        sudo usermod --shell "$ZSH_PATH" "$USER" > /dev/null 2>&1 || chsh -s "$ZSH_PATH" > /dev/null 2>&1
+        if ! sudo usermod --shell "$ZSH_PATH" "$USER" > /dev/null 2>&1; then
+            if ! chsh -s "$ZSH_PATH"; then
+                echo -e "${YELLOW}Warning: Could not set Zsh as default shell automatically.${NC}"
+                echo -e "${YELLOW}Run manually: chsh -s ${ZSH_PATH}${NC}"
+            fi
+        fi
     fi
 fi
 
