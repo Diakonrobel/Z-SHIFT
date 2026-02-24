@@ -1,17 +1,19 @@
 #!/bin/bash
 # tests/local_test.sh
 
-# Colors
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 
-echo "Running Z-Shift Local Tests..."
+echo "Running Z-Shift Local Tests (repo root: $REPO_ROOT)..."
 
-# Check if files exist
-REQUIRED_FILES=("install.sh" ".zshrc" "README.md")
+# Check required files exist
+REQUIRED_FILES=("install.sh" ".zshrc" "README.md" "theme.sh" "uninstall.sh")
 for file in "${REQUIRED_FILES[@]}"; do
-    if [ -f "../$file" ] || [ -f "$file" ]; then
+    if [ -f "$REPO_ROOT/$file" ]; then
         echo -e "[${GREEN}PASS${NC}] File $file exists"
     else
         echo -e "[${RED}FAIL${NC}] File $file missing"
@@ -19,14 +21,9 @@ for file in "${REQUIRED_FILES[@]}"; do
     fi
 done
 
-# Syntax Check (Zsh)
+# Zsh syntax check
 if command -v zsh >/dev/null; then
-    # We look for .zshrc in parent dir or current dir
-    ZSHRC_PATH=""
-    [ -f ".zshrc" ] && ZSHRC_PATH=".zshrc"
-    [ -f "../.zshrc" ] && ZSHRC_PATH="../.zshrc"
-    
-    if zsh -n "$ZSHRC_PATH"; then
+    if zsh -n "$REPO_ROOT/.zshrc"; then
         echo -e "[${GREEN}PASS${NC}] .zshrc syntax is valid"
     else
         echo -e "[${RED}FAIL${NC}] .zshrc contains syntax errors"
@@ -37,18 +34,18 @@ else
 fi
 
 # Shellcheck (Bash)
+# from the repo root automatically, keeping rules in sync with CI.
 if command -v shellcheck >/dev/null; then
-    INSTALL_PATH=""
-    [ -f "install.sh" ] && INSTALL_PATH="install.sh"
-    [ -f "../install.sh" ] && INSTALL_PATH="../install.sh"
-
-    # We exclude warning SC2181 (checking $? directly) as it's common in install scripts
-    if shellcheck -e SC2181 "$INSTALL_PATH"; then
-        echo -e "[${GREEN}PASS${NC}] install.sh passed shellcheck"
-    else
-        echo -e "[${RED}FAIL${NC}] install.sh failed shellcheck"
-        exit 1
-    fi
+    FAILED=0
+    for script in install.sh theme.sh uninstall.sh; do
+        if shellcheck "$REPO_ROOT/$script"; then
+            echo -e "[${GREEN}PASS${NC}] $script passed shellcheck"
+        else
+            echo -e "[${RED}FAIL${NC}] $script failed shellcheck"
+            FAILED=1
+        fi
+    done
+    [ "$FAILED" -eq 1 ] && exit 1
 else
     echo -e "[${RED}WARN${NC}] shellcheck not installed, skipping linting"
 fi
