@@ -111,7 +111,7 @@ zstyle ':completion:::::' completer _expand _complete _ignored _approximate
 # Set descriptions format to enable group support in fzf-tab
 zstyle ':completion:*:descriptions' format '[%d]'
 # Preview directory contents with eza when completing cd
-zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always -- "$realpath"'
 # Switch completion groups using `<` and `>`
 zstyle ':fzf-tab:*' switch-group '<' '>'
 

@@ -17,8 +17,8 @@
 ![Tealdeer](https://img.shields.io/badge/Docs-Tealdeer-%2320B2AA?style=flat-square&logo=rust&logoColor=white)
 ![Nerd Fonts](https://img.shields.io/badge/Nerd_Fonts-%23333333.svg?style=flat-square&logo=nerdfonts&logoColor=white)
 ![Git](https://img.shields.io/badge/git-%23F05033.svg?style=flat-square&logo=git&logoColor=white)
-![Zsh Startup Time](https://img.shields.io/badge/Startup_Time-%3C100ms-success?style=flat-square&logo=zsh)
-![Input Lag](https://img.shields.io/badge/Input_Lag-~6ms-blue?style=flat-square)
+![Zsh Startup Time](https://img.shields.io/badge/Startup_Time-%3C70ms-success?style=flat-square&logo=zsh)
+![Input Lag](https://img.shields.io/badge/Input_Lag-~3ms-blue?style=flat-square)
 [![Z-Shift CI](https://github.com/0xdilshan/Z-SHIFT/actions/workflows/ci.yml/badge.svg)](https://github.com/0xdilshan/Z-SHIFT/actions/workflows/ci.yml)
 
 
@@ -68,7 +68,6 @@ It handles the heavy lifting of installing a modern plugin manager, configuring 
   - **eza:** A modern & maintained replacement for `ls` with colors and icons. [https://github.com/eza-community/eza]
   - **fd:** A simple & fast and user-friendly alternative to `find`. [https://github.com/sharkdp/fd]
   - **fzf:** A general-purpose command-line fuzzy finder for lightning-fast file and history navigation. [https://github.com/junegunn/fzf]
-  - **fzf-tab:** Supercharges Zsh tab-completion by replacing the default menu with a fuzzy-search interface. [https://github.com/Aloxaf/fzf-tab]
   - **ripgrep:** A line-oriented search tool that respects .gitignore and is faster than grep. [https://github.com/BurntSushi/ripgrep]
   - **tealdeer:** A fast implementation of `tldr;` (simplified man pages). [https://github.com/tealdeer-rs/tealdeer]
   - **zoxide:** A smarter `cd` command that learns your habits. [https://github.com/ajeetdsouza/zoxide]
@@ -137,7 +136,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/t
   - **Git:** Essential git aliases.
   - **History:** Optimized history settings for better search and recall.
   - **Directories:** Navigation shortcuts and directory stack management.
-  - **Completion:** Tab completion enhanced with `zsh-completions`.
+  - **Completion:** Tab completion enhanced with `zsh-completions` & `fzf-tab`.
   - **Syntax Highlighting:** Real-time syntax highlighting via `fast-syntax-highlighting`.
   - **Autosuggestions:** Fish-style inline suggestions powered by `zsh-autosuggestions`.
   - **Clipboard:** Cross-platform clipboard integration.
