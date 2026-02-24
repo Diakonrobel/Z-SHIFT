@@ -5,14 +5,25 @@
 #  ╚══███╔╝      ██╔════╝██║  ██║██║██╔════╝╚══██╔══╝
 #    ███╔╝ █████╗███████╗███████║██║█████╗     ██║   
 #   ███╔╝  ╚════╝╚════██║██╔══██║██║██╔══╝     ██║   
-#  ███████╗      ███████╗██║  ██║██║██║         ██║   
-#  ╚══════╝      ╚══════╝╚═╝  ╚═╝╚═╝╚═╝         ╚═╝   
+#  ███████╗      ███████╗██║  ██║██║██║        ██║   
+#  ╚══════╝      ╚══════╝╚═╝  ╚═╝╚═╝╚═╝        ╚═╝   
 # =============================================================================
 #  Z-SHIFT: High-Performance Zsh + Starship + Zinit installation script
 # =============================================================================
 
 # Exit immediately if a command exits with a non-zero status
 set -e
+
+# --- GLOBAL VARIABLES & CLEANUP TRAP ---
+TEMP_DIR=""
+
+cleanup() {
+    # This runs automatically on script exit, interruption, or termination
+    if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
+        rm -rf "$TEMP_DIR"
+    fi
+}
+trap cleanup EXIT INT TERM
 
 # --- CONFIGURATION ---
 ZSHRC_URL="${ZSHIFT_CUSTOM_URL:-https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/.zshrc}"
@@ -40,33 +51,33 @@ elif [ -f /etc/os-release ]; then
     OS_TYPE="linux"
     # shellcheck disable=SC1091
     . /etc/os-release
-    DISTRO=$ID
+    DISTRO="$ID"
 fi
 
 echo -e "${BLUE}Detected OS: ${OS_TYPE} (${DISTRO})${NC}"
 
-# Helper function to install packages based on distro
+# Helper function to install packages silently based on distro
 install_pkg() {
     local pkgs=("$@")
     echo -e "${YELLOW}Installing: ${pkgs[*]}...${NC}"
 
     case $DISTRO in
         ubuntu|debian|pop|kali|linuxmint)
-            sudo apt update -y
-            sudo apt install -y "${pkgs[@]}"
+            export DEBIAN_FRONTEND=noninteractive
+            sudo apt-get update -qq -y > /dev/null
+            sudo apt-get install -qq -y "${pkgs[@]}" > /dev/null
             ;;
         arch|manjaro|endeavouros)
-            # Use --needed to skip up-to-date packages
-            sudo pacman -Sy --noconfirm --needed "${pkgs[@]}"
+            sudo pacman -Sy --quiet --noconfirm --needed "${pkgs[@]}" > /dev/null
             ;;
         fedora|rhel|centos)
-            sudo dnf install -y "${pkgs[@]}"
+            sudo dnf install -q -y "${pkgs[@]}" > /dev/null
             ;;
         opensuse*|suse)
-            sudo zypper install -y "${pkgs[@]}"
+            sudo zypper install -q -y "${pkgs[@]}" > /dev/null
             ;;
         macos)
-            brew install "${pkgs[@]}"
+            brew install -q "${pkgs[@]}" > /dev/null
             ;;
         *)
             echo -e "${RED}Unsupported distribution: $DISTRO${NC}"
@@ -80,8 +91,9 @@ install_pkg() {
 # =============================================================================
 if [[ "$OS_TYPE" == "macos" ]]; then
     if ! command -v brew &> /dev/null; then
-        echo -e "${YELLOW}Homebrew not found. Installing Homebrew...${NC}"
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        echo -e "${YELLOW}Homebrew not found. Installing Homebrew (this may take a while)...${NC}"
+        # Silencing homebrew installation logs but keeping stderr
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" > /dev/null
         
         if [ -f "/opt/homebrew/bin/brew" ]; then
             eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -95,28 +107,16 @@ fi
 # 2. SYSTEM DEPENDENCIES
 # =============================================================================
 echo -e "${YELLOW}Installing base dependencies...${NC}"
-COMMON_DEPS="git curl unzip zsh"
+
+# Define dependencies as an array to prevent word-splitting issues
+COMMON_DEPS=(git curl unzip zsh)
 
 if [[ "$OS_TYPE" == "macos" ]]; then
     install_pkg git curl wget unzip zsh
 else
     # Linux specific checks: using 'gnupg' for cross-distro compatibility
-    install_pkg wget gnupg $COMMON_DEPS
+    install_pkg wget gnupg "${COMMON_DEPS[@]}"
 fi
-
-# =============================================================================
-# 2. SYSTEM DEPENDENCIES
-# =============================================================================
-echo -e "${YELLOW}Installing base dependencies...${NC}"
-COMMON_DEPS="git curl unzip zsh"
-
-if [[ "$OS_TYPE" == "macos" ]]; then
-    install_pkg git curl wget unzip zsh
-else
-    # Linux-specific checks: using 'gnupg' for cross-distro compatibility
-    install_pkg wget gnupg $COMMON_DEPS
-fi
-
 
 # =============================================================================
 # 3. INSTALL STANDALONE TOOLS (Eza)
@@ -128,23 +128,23 @@ if command -v eza &> /dev/null; then
 else
     case "$DISTRO" in
         ubuntu|debian|pop|kali|linuxmint)
+            export DEBIAN_FRONTEND=noninteractive
             sudo mkdir -p /etc/apt/keyrings
             wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc \
-                | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg
+                | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg > /dev/null 2>&1 || true
 
             echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/gierens.gpg] http://deb.gierens.de stable main" \
-                | sudo tee /etc/apt/sources.list.d/gierens.list
+                | sudo tee /etc/apt/sources.list.d/gierens.list > /dev/null
 
             sudo chmod 644 /etc/apt/keyrings/gierens.gpg \
                 /etc/apt/sources.list.d/gierens.list
 
-            sudo apt update && sudo apt install -y eza
+            sudo apt-get update -qq -y > /dev/null && sudo apt-get install -qq -y eza > /dev/null
             ;;
 
         fedora)
             FEDORA_VERSION=$(rpm -E %fedora)
 
-            # Fedora 42+ logic (assuming eza isn't in repos yet)
             if [ "$FEDORA_VERSION" -ge 42 ]; then
                 echo -e "${YELLOW}:: Fedora $FEDORA_VERSION detected. Downloading binary...${NC}"
 
@@ -162,12 +162,9 @@ else
                 FILENAME="eza_${BINARY_ARCH}.tar.gz"
                 URL="https://github.com/eza-community/eza/releases/latest/download/${FILENAME}"
 
-                echo -e "${BLUE}Downloading $FILENAME...${NC}"
+                # Download silently (-sS) and extract
+                curl -sSL "$URL" | tar -xz -C /tmp
 
-                # Download and extract in one pipeline to avoid messy temp files
-                curl -L "$URL" | tar -xz -C /tmp
-
-                # Move and set permissions
                 if [ -f "/tmp/eza" ]; then
                     sudo mv /tmp/eza /usr/local/bin/eza
                     sudo chmod +x /usr/local/bin/eza
@@ -177,9 +174,7 @@ else
                     exit 1
                 fi
             else
-                # Standard repo install for older versions
-                echo -e "${BLUE}:: Installing eza via DNF...${NC}"
-                sudo dnf install -y eza
+                sudo dnf install -q -y eza > /dev/null
             fi
             ;;
 
@@ -196,7 +191,8 @@ echo -e "${YELLOW}Setting up Configuration...${NC}"
 
 # --- Prepare Directories ---
 rm -rf ~/.config/eza-themes
-git clone --quiet https://github.com/eza-community/eza-themes.git ~/.config/eza-themes
+# Clone silently
+git clone --quiet https://github.com/eza-community/eza-themes.git ~/.config/eza-themes > /dev/null 2>&1
 mkdir -p ~/.config/eza
 mkdir -p ~/.config
 
@@ -205,52 +201,36 @@ if ! command -v starship &> /dev/null; then
     if [[ "$OS_TYPE" == "macos" ]]; then
         install_pkg starship
     else
-        curl -sS https://starship.rs/install.sh | sh -s -- -y
+        # Install starship silently
+        curl -sS https://starship.rs/install.sh | sh -s -- -y > /dev/null
     fi
 fi
 
 # --- Theme Arrays ---
 STARSHIP_THEMES=(
-    "gruvbox-rainbow"
-    "nerd-font-symbols"
-    "no-nerd-font"
-    "bracketed-segments"
-    "plain-text-symbols"
-    "no-runtime-versions"
-    "no-empty-icons"
-    "pure-preset"
-    "pastel-powerline"
-    "tokyo-night"
-    "jetpack"
-    "catppuccin-powerline"
+    "gruvbox-rainbow" "nerd-font-symbols" "no-nerd-font"
+    "bracketed-segments" "plain-text-symbols" "no-runtime-versions"
+    "no-empty-icons" "pure-preset" "pastel-powerline"
+    "tokyo-night" "jetpack" "catppuccin-powerline"
 )
 
 EZA_THEMES=(
-    "gruvbox-dark.yml"
-    "black.yml"
-    "catppuccin-frappe.yml"
-    "catppuccin-latte.yml"
-    "catppuccin-macchiato.yml"
-    "catppuccin-mocha.yml"
-    "default.yml"
-    "dracula.yml"
-    "frosty.yml"
-    "gruvbox-light.yml"
-    "one_dark.yml"
-    "rose-pine-dawn.yml"
-    "rose-pine-moon.yml"
-    "rose-pine.yml"
-    "solarized-dark.yml"
-    "tokyonight.yml"
-    "white.yml"
+    "gruvbox-dark.yml" "black.yml" "catppuccin-frappe.yml"
+    "catppuccin-latte.yml" "catppuccin-macchiato.yml" "catppuccin-mocha.yml"
+    "default.yml" "dracula.yml" "frosty.yml" "gruvbox-light.yml"
+    "one_dark.yml" "rose-pine-dawn.yml" "rose-pine-moon.yml"
+    "rose-pine.yml" "solarized-dark.yml" "tokyonight.yml" "white.yml"
 )
 
 # --- Interactive Menu Logic ---
-# Defaults
 SELECTED_STARSHIP="gruvbox-rainbow"
 SELECTED_EZA="gruvbox-dark.yml"
 
 if [ "$CI_ENV" != "true" ]; then
+    if [ ! -t 0 ]; then
+        exec < /dev/tty
+    fi
+
     echo -e "\n${CYAN}::: THEME SELECTION :::${NC}"
     echo "1) Default (Starship: Gruvbox-Rainbow | Eza: Gruvbox-Dark)"
     echo "2) Custom Selection"
@@ -258,7 +238,6 @@ if [ "$CI_ENV" != "true" ]; then
     read -r THEME_OPT
 
     if [[ "$THEME_OPT" == "2" ]]; then
-        # 1. Select Starship Theme
         echo -e "\n${BLUE}:: Select Starship Prompt Theme ::${NC}"
         PS3="Enter number (1-${#STARSHIP_THEMES[@]}): "
         select s_theme in "${STARSHIP_THEMES[@]}"; do
@@ -270,7 +249,6 @@ if [ "$CI_ENV" != "true" ]; then
             fi
         done
 
-        # 2. Select Eza Theme
         echo -e "\n${BLUE}:: Select Eza (ls) Theme ::${NC}"
         PS3="Enter number (1-${#EZA_THEMES[@]}): "
         select e_theme in "${EZA_THEMES[@]}"; do
@@ -288,7 +266,7 @@ fi
 
 # --- Apply Configuration ---
 echo -e "${YELLOW}Applying Starship Preset: ${SELECTED_STARSHIP}...${NC}"
-starship preset "$SELECTED_STARSHIP" -o ~/.config/starship.toml || \
+starship preset "$SELECTED_STARSHIP" -o ~/.config/starship.toml > /dev/null 2>&1 || \
     echo -e "${RED}Warning: Failed to load preset '$SELECTED_STARSHIP'. Check starship version.${NC}"
 
 echo -e "${YELLOW}Applying Eza Theme: ${SELECTED_EZA}...${NC}"
@@ -300,17 +278,19 @@ ln -sf "$HOME/.config/eza-themes/themes/${SELECTED_EZA}" "$HOME/.config/eza/them
 if [ "$CI_ENV" = "true" ]; then
     echo -e "${YELLOW}>> CI Environment detected. Skipping Font Installation.${NC}"
 else
+    if [ ! -t 0 ]; then
+        exec < /dev/tty
+    fi
+
     echo -e "\n${CYAN}::: FONT INSTALLATION :::${NC}"
     echo -ne "${YELLOW}Install FiraCode Nerd Font? [Y/n] (default: Y): ${NC}"
     read -r FONT_OPT
 
-    # Check for 'n' or 'N'. All other inputs (including empty Enter) trigger installation.
     if [[ "$FONT_OPT" =~ ^[Nn]$ ]]; then
         echo -e "${BLUE}>> Skipping Font Installation.${NC}"
     else
         echo -e "${YELLOW}Installing FiraCode Nerd Font...${NC}"
         
-        # Determine Font Directory
         if [[ "$OS_TYPE" == "macos" ]]; then
             FONT_DIR="$HOME/Library/Fonts"
         else
@@ -320,17 +300,16 @@ else
         mkdir -p "$FONT_DIR"
         TEMP_DIR=$(mktemp -d)
 
-        echo -e "${BLUE}Downloading FiraCode.zip...${NC}"
-
-        wget -q --show-progress -O "$TEMP_DIR/FiraCode.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/FiraCode.zip"
+        # Removed --show-progress to prevent progress bar spam, replacing it with quiet download
+        wget -q -O "$TEMP_DIR/FiraCode.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/FiraCode.zip"
         unzip -q "$TEMP_DIR/FiraCode.zip" -d "$TEMP_DIR"
         find "$TEMP_DIR" -name "*.ttf" -exec mv -f {} "$FONT_DIR/" \; 2>/dev/null || true
-        rm -rf "$TEMP_DIR"
         
-        # Refresh Cache (Linux only)
+        # Immediate cleanup via explicit call (Trap will also handle this if it fails before this line)
+        [ -n "$TEMP_DIR" ] && rm -rf "$TEMP_DIR" && TEMP_DIR=""
+        
         if [[ "$OS_TYPE" == "linux" ]] && command -v fc-cache &> /dev/null; then
-            echo -e "${BLUE}Updating font cache...${NC}"
-            fc-cache -f "$FONT_DIR"
+            fc-cache -f -q "$FONT_DIR" > /dev/null 2>&1
         fi
         echo -e "${GREEN}✔ Font installation complete.${NC}"
     fi
@@ -353,7 +332,7 @@ fi
 # =============================================================================
 # 7. FINALIZE
 # =============================================================================
-ZSH_PATH=$(which zsh)
+ZSH_PATH=$(command -v zsh)
 
 if [ "$CI_ENV" = "true" ]; then
     echo -e "\n${GREEN}✔ CI Environment detected. Installation Verified!${NC}"
@@ -361,15 +340,15 @@ if [ "$CI_ENV" = "true" ]; then
 fi
 
 if ! grep -q "$ZSH_PATH" /etc/shells; then
-    echo "$ZSH_PATH" | sudo tee -a /etc/shells
+    echo "$ZSH_PATH" | sudo tee -a /etc/shells > /dev/null
 fi
 
 if [ "$SHELL" != "$ZSH_PATH" ]; then
     if [[ "$OS_TYPE" == "macos" ]]; then
-        chsh -s "$ZSH_PATH"
+        chsh -s "$ZSH_PATH" > /dev/null 2>&1
     else
-        sudo usermod --shell "$ZSH_PATH" "$USER" || chsh -s "$ZSH_PATH"
+        sudo usermod --shell "$ZSH_PATH" "$USER" > /dev/null 2>&1 || chsh -s "$ZSH_PATH" > /dev/null 2>&1
     fi
 fi
 
-echo -e "\n${GREEN}✔ Z-Shift Installation Complete!${NC}"
+echo -e "\n${GREEN}✔ Z-Shift Installation Complete! Please restart your terminal.${NC}"
