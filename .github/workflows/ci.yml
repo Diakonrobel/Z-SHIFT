@@ -12,6 +12,7 @@ on:
 jobs:
   # -----------------------------------------------------------------------------
   # JOB 1: STATIC ANALYSIS (LINTING)
+  # CI and local test use identical rules without duplicating the ignore list.
   # -----------------------------------------------------------------------------
   lint:
     runs-on: ubuntu-latest
@@ -19,19 +20,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Shellcheck
-        run: sudo apt-get install -y shellcheck
+      - name: Install Shellcheck & Zsh
+        run: sudo apt-get install -y shellcheck zsh
 
       - name: Lint Installer (Bash)
-        # SC2086: Double quote variables (ignored for flexibility)
-        # SC2034: Unused variables (ignored)
-        # SC1091: Not following sourced files (ignored for /etc/os-release)
-        run: shellcheck -e SC2086,SC2034,SC1091 install.sh
+        run: shellcheck install.sh
 
-      - name: Verify Zsh Syntax
-        run: |
-          sudo apt-get install -y zsh
-          zsh -n .zshrc
+      - name: Lint Theme Switcher (Bash)
+        run: shellcheck theme.sh
+
+      - name: Lint Uninstaller (Bash)
+        run: shellcheck uninstall.sh
+
+      - name: Verify Zsh Syntax (.zshrc)
+        run: zsh -n .zshrc
 
   # -----------------------------------------------------------------------------
   # JOB 2: INTEGRATION TEST (UBUNTU & MACOS)
@@ -44,7 +46,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -52,11 +54,9 @@ jobs:
         run: chmod +x install.sh
 
       - name: Run Installer (Non-Interactive)
-        # Pipes 'yes' for prompts. Uses CI_ENV to skip fonts/chsh.
-        run: |
-          yes | ./install.sh
+        run: yes | ./install.sh
         env:
-          CI_ENV: true 
+          CI_ENV: true
 
       - name: Verify Zshrc Created
         run: |
@@ -65,17 +65,34 @@ jobs:
             exit 1
           fi
 
-      # FIX FOR MAC/UBUNTU: 
-      # We must run zsh once to trigger the Zinit git clone inside .zshrc
+      # Run zsh once to trigger the Zinit git clone inside .zshrc.
       - name: Bootstrap Zinit (Initialize Zsh)
-        run: zsh -ic "exit" || true
-
-      - name: Verify Plugins Installed
         run: |
-          # Check standard XDG path or legacy path
+          zsh -ic "exit" 2>&1 || echo "Note: zsh bootstrap exited non-zero (likely async plugin load — see output above)"
+
+      - name: Verify Zinit Installed
+        run: |
           if [ ! -d "${HOME}/.local/share/zinit" ] && [ ! -d "${HOME}/.zinit" ]; then
-             echo "Error: Zinit directory not found! Plugin installation failed."
-             exit 1
+            echo "Error: Zinit directory not found! Plugin installation failed."
+            exit 1
+          fi
+
+
+      - name: Verify Core Tools Installed
+        run: |
+          MISSING=()
+          for tool in eza bat fzf zoxide starship; do
+            if zsh -ic "command -v $tool" > /dev/null 2>&1; then
+              echo "PASS: $tool found"
+            else
+              echo "WARN: $tool not found (may still be loading via Zinit turbo)"
+              MISSING+=("$tool")
+            fi
+          done
+          # Fail if more than half the tools are missing — something went wrong.
+          if [ "${#MISSING[@]}" -ge 3 ]; then
+            echo "Error: Too many tools missing: ${MISSING[*]}"
+            exit 1
           fi
 
 # -----------------------------------------------------------------------------
@@ -88,25 +105,22 @@ jobs:
     strategy:
       matrix:
         distro: [archlinux:latest, fedora:latest]
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Test in Docker
         run: |
           docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace ${{ matrix.distro }} /bin/bash -c "
-            # Set colors for better logging
             GREEN='\033[0;32m'
             NC='\033[0m'
-            
+
             echo -e \"\${GREEN}>>> 1. SETUP: Installing dependencies for ${{ matrix.distro }}...\${NC}\"
-            
+
             # --- ARCH LINUX ---
             if [ -f /etc/arch-release ]; then
               pacman -Sy --noconfirm archlinux-keyring
-              # Ensure wget is installed to handle the file:// download
               pacman -Syu --noconfirm git curl wget unzip sudo which base-devel ca-certificates
-              
               useradd -m -s /bin/bash tester
               echo 'tester ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
             fi
@@ -115,50 +129,54 @@ jobs:
             if [ -f /etc/fedora-release ]; then
               dnf upgrade -y --refresh
               dnf install -y git curl wget unzip sudo util-linux-user which findutils dnf-plugins-core ca-certificates
-
-              # Pre-install Eza
               dnf install -y eza || (dnf copr enable -y piegames/eza && dnf install -y eza)
-              
               useradd -m -s /bin/bash tester
               echo 'tester ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
             fi
 
             echo -e \"\${GREEN}>>> 2. PREPARE: Injecting local file path...\${NC}\"
-            
-            # 1. Copy the repository files to a temp location so we can modify them freely
+
             cp /workspace/install.sh /tmp/install.sh
             cp /workspace/.zshrc /tmp/.zshrc
-            
-            # 2. USE SED TO REPLACE THE URL
-            # This changes the URL from 'https://...' to 'file:///tmp/.zshrc'
-            # Now wget will 'download' the local file instead of going to the internet.
             sed -i 's|^ZSHRC_URL=.*|ZSHRC_URL=\"file:///tmp/.zshrc\"|' /tmp/install.sh
-
-            # 3. Permissions
             chmod +x /tmp/install.sh
             chmod 644 /tmp/.zshrc
             chown -R tester:tester /tmp
 
             echo -e \"\${GREEN}>>> 3. TEST: Running installer as user tester...\${NC}\"
-            
-            # Run the modified script in /tmp
+
             su tester -c 'export CI_ENV=true && yes | /tmp/install.sh'
-            
+
             echo -e \"\${GREEN}>>> 4. VERIFY: Checking results...\${NC}\"
-            
+
             if [ -f /home/tester/.zshrc ]; then
               echo 'SUCCESS: .zshrc created'
             else
               echo 'FAILURE: .zshrc missing'
               exit 1
             fi
-            
-            # Verify Zinit bootstrap
-            su tester -c 'zsh -ic exit' || true
+
+            su tester -c 'zsh -ic exit' 2>&1 || echo 'Note: zsh bootstrap exited non-zero'
+
             if [ -d /home/tester/.local/share/zinit ]; then
-               echo 'SUCCESS: Zinit installed'
+              echo 'SUCCESS: Zinit installed'
             else
-               echo 'FAILURE: Zinit missing'
-               exit 1
+              echo 'FAILURE: Zinit missing'
+              exit 1
+            fi
+
+            echo -e \"\${GREEN}>>> 5. VERIFY: Checking tool availability...\${NC}\"
+            MISSING=0
+            for tool in eza starship; do
+              if su tester -c \"zsh -ic 'command -v $tool'\" > /dev/null 2>&1; then
+                echo \"SUCCESS: \$tool found\"
+              else
+                echo \"WARN: \$tool not found\"
+                MISSING=\$((MISSING + 1))
+              fi
+            done
+            if [ \"\$MISSING\" -ge 2 ]; then
+              echo 'FAILURE: Too many tools missing'
+              exit 1
             fi
           "
