@@ -14,6 +14,22 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
+# --- COLORS ---
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+# --- ROOT CHECK ---
+# Prevent running the script as root (unless in CI) to protect user's $HOME permissions
+if [ "$EUID" -eq 0 ] && [ "$CI_ENV" != "true" ]; then
+    echo -e "${RED}Please do not run this script as root or with sudo.${NC}"
+    echo -e "${YELLOW}The script will prompt for your sudo password when needed.${NC}"
+    exit 1
+fi
+
 # --- GLOBAL VARIABLES & CLEANUP TRAP ---
 TEMP_DIR=""
 
@@ -27,14 +43,6 @@ trap cleanup EXIT INT TERM
 
 # --- CONFIGURATION ---
 ZSHRC_URL="${ZSHIFT_CUSTOM_URL:-https://raw.githubusercontent.com/0xdilshan/Z-SHIFT/main/.zshrc}"
-
-# Colors for output
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
 
 echo -e "${CYAN}>>> Initiating Z-Shift Environment Deployment...${NC}"
 
@@ -162,17 +170,20 @@ else
                 FILENAME="eza_${BINARY_ARCH}.tar.gz"
                 URL="https://github.com/eza-community/eza/releases/latest/download/${FILENAME}"
 
-                # Download silently (-sS) and extract
-                curl -sSL "$URL" | tar -xz -C /tmp
+                # Download silently (-sS) and extract securely using a temp dir
+                EZA_TMP=$(mktemp -d)
+                curl -sSL "$URL" | tar -xz -C "$EZA_TMP"
 
-                if [ -f "/tmp/eza" ]; then
-                    sudo mv /tmp/eza /usr/local/bin/eza
+                if [ -f "$EZA_TMP/eza" ]; then
+                    sudo mv "$EZA_TMP/eza" /usr/local/bin/eza
                     sudo chmod +x /usr/local/bin/eza
                     echo -e "${GREEN}:: eza installed successfully to /usr/local/bin/eza${NC}"
                 else
                     echo -e "${RED}Error: Binary 'eza' not found in archive.${NC}"
+                    rm -rf "$EZA_TMP"
                     exit 1
                 fi
+                rm -rf "$EZA_TMP"
             else
                 sudo dnf install -q -y eza > /dev/null
             fi
@@ -190,11 +201,11 @@ fi
 echo -e "${YELLOW}Setting up Configuration...${NC}"
 
 # --- Prepare Directories ---
-rm -rf ~/.config/eza-themes
+rm -rf "$HOME/.config/eza-themes"
 # Clone silently
-git clone --quiet https://github.com/eza-community/eza-themes.git ~/.config/eza-themes > /dev/null 2>&1
-mkdir -p ~/.config/eza
-mkdir -p ~/.config
+git clone --quiet https://github.com/eza-community/eza-themes.git "$HOME/.config/eza-themes" > /dev/null 2>&1
+mkdir -p "$HOME/.config/eza"
+mkdir -p "$HOME/.config"
 
 # --- Install Starship Binary if missing ---
 if ! command -v starship &> /dev/null; then
@@ -266,7 +277,7 @@ fi
 
 # --- Apply Configuration ---
 echo -e "${YELLOW}Applying Starship Preset: ${SELECTED_STARSHIP}...${NC}"
-starship preset "$SELECTED_STARSHIP" -o ~/.config/starship.toml > /dev/null 2>&1 || \
+starship preset "$SELECTED_STARSHIP" -o "$HOME/.config/starship.toml" > /dev/null 2>&1 || \
     echo -e "${RED}Warning: Failed to load preset '$SELECTED_STARSHIP'. Check starship version.${NC}"
 
 echo -e "${YELLOW}Applying Eza Theme: ${SELECTED_EZA}...${NC}"
@@ -274,8 +285,8 @@ ln -sf "$HOME/.config/eza-themes/themes/${SELECTED_EZA}" "$HOME/.config/eza/them
 
 # --- Zsh Environment Optimization ---
 echo -e "${YELLOW}Optimizing Zsh startup...${NC}"
-if ! grep -q "skip_global_compinit=1" ~/.zshenv 2>/dev/null; then
-    echo 'skip_global_compinit=1' >> ~/.zshenv
+if ! grep -q "skip_global_compinit=1" "$HOME/.zshenv" 2>/dev/null; then
+    echo 'skip_global_compinit=1' >> "$HOME/.zshenv"
 fi
 
 # =============================================================================
@@ -325,20 +336,25 @@ fi
 # 6. DOWNLOAD .ZSHRC
 # =============================================================================
 echo -e "${YELLOW}Downloading .zshrc from GitHub...${NC}"
-[ -f ~/.zshrc ] && mv ~/.zshrc ~/.zshrc.bak
+[ -f "$HOME/.zshrc" ] && mv "$HOME/.zshrc" "$HOME/.zshrc.bak"
 
-if curl -fsSL -o ~/.zshrc "$ZSHRC_URL"; then
+if curl -fsSL -o "$HOME/.zshrc" "$ZSHRC_URL"; then
     echo -e "${GREEN}Downloaded .zshrc successfully.${NC}"
 else
     echo -e "${RED}Failed to download .zshrc!${NC}"
-    [ -f ~/.zshrc.bak ] && mv ~/.zshrc.bak ~/.zshrc
+    [ -f "$HOME/.zshrc.bak" ] && mv "$HOME/.zshrc.bak" "$HOME/.zshrc"
     exit 1
 fi
 
 # =============================================================================
 # 7. FINALIZE
 # =============================================================================
-ZSH_PATH=$(command -v zsh)
+ZSH_PATH=$(command -v zsh || true)
+
+if [ -z "$ZSH_PATH" ]; then
+    echo -e "${RED}Error: Zsh binary not found. Please verify the installation.${NC}"
+    exit 1
+fi
 
 if [ "$CI_ENV" = "true" ]; then
     echo -e "\n${GREEN}✔ CI Environment detected. Installation Verified!${NC}"

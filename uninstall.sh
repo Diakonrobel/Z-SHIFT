@@ -1,17 +1,36 @@
 #!/bin/bash
 
 # =============================================================================
-#  Z-SHIFT: Cleanup & Restoration Script (Final Hardened Version)
+#  Z-SHIFT: Cleanup & Restoration Script
 # =============================================================================
 
 # Colors for output
-RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m'
+CYAN='\033[0;36m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
-echo -e "${BLUE}>>> Starting Z-Shift Removal...${NC}"
+echo -e "${CYAN}>>> Initiating Z-Shift Environment Removal...${NC}"
+
+# =============================================================================
+# 0. OS & PACKAGE MANAGER DETECTION
+# =============================================================================
+OS_TYPE="unknown"
+DISTRO="unknown"
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    OS_TYPE="macos"
+    DISTRO="macos"
+elif [ -f /etc/os-release ]; then
+    OS_TYPE="linux"
+    # shellcheck disable=SC1091
+    . /etc/os-release
+    DISTRO="$ID"
+fi
+
+echo -e "${BLUE}Detected OS: ${OS_TYPE} (${DISTRO})${NC}"
 
 # -----------------------------------------------------------------------------
 # Helper: Detect current shell safely
@@ -27,7 +46,7 @@ get_current_shell() {
 # -----------------------------------------------------------------------------
 # 1. RESTORE PREVIOUS SHELL
 # -----------------------------------------------------------------------------
-if [[ "$OSTYPE" != "darwin"* ]]; then
+if [[ "$OS_TYPE" != "macos" ]]; then
     CURRENT_SHELL=$(get_current_shell)
 
     if [[ "$CURRENT_SHELL" == *"zsh"* ]]; then
@@ -35,13 +54,16 @@ if [[ "$OSTYPE" != "darwin"* ]]; then
 
         if [ -n "$BASH_PATH" ]; then
             echo -e "${YELLOW}:: Reverting default shell to Bash...${NC}"
-            # Try usermod first, fallback to chsh
-            sudo usermod --shell "$BASH_PATH" "$USER" 2>/dev/null || chsh -s "$BASH_PATH"
-            echo -e "${GREEN}✔ Default shell reverted to $BASH_PATH.${NC}"
+            if sudo usermod --shell "$BASH_PATH" "$USER" 2>/dev/null || chsh -s "$BASH_PATH"; then
+                echo -e "${GREEN}✔ Default shell reverted to $BASH_PATH.${NC}"
+            else
+                echo -e "${RED}✘ Failed to revert default shell. You may need to do this manually.${NC}"
+            fi
+        else
+            echo -e "${RED}✘ Bash not found in PATH. Cannot automatically revert shell.${NC}"
         fi
     fi
 else
-    # On Mac, Zsh is the system default. We leave it as is.
     echo -e "${GREEN}:: macOS detected. Keeping Zsh as system default.${NC}"
 fi
 
@@ -50,7 +72,7 @@ fi
 # -----------------------------------------------------------------------------
 echo -e "${YELLOW}:: Cleaning up configuration files...${NC}"
 
-# Restore .zshrc backup if available, otherwise just delete the Z-Shift one
+# Restore .zshrc backup
 if [ -f "$HOME/.zshrc.bak" ]; then
     mv "$HOME/.zshrc.bak" "$HOME/.zshrc"
     echo -e "${GREEN}✔ Restored previous .zshrc from backup.${NC}"
@@ -59,41 +81,66 @@ else
     echo -e "${YELLOW}:: No backup found. Removed Z-Shift .zshrc.${NC}"
 fi
 
-# Remove Z-Shift specific config files
+# Remove Z-Shift added line in .zshenv
+if [ -f "$HOME/.zshenv" ]; then
+    if grep -q "skip_global_compinit=1" "$HOME/.zshenv"; then
+        grep -v "skip_global_compinit=1" "$HOME/.zshenv" > "$HOME/.zshenv.tmp" && mv "$HOME/.zshenv.tmp" "$HOME/.zshenv"
+        echo -e "${GREEN}✔ Cleaned up ~/.zshenv.${NC}"
+    fi
+    [ ! -s "$HOME/.zshenv" ] && rm -f "$HOME/.zshenv"
+fi
+
+# Remove Z-Shift directories
 rm -f "$HOME/.config/starship.toml"
 rm -rf "$HOME/.config/eza"
 rm -rf "$HOME/.config/eza-themes"
 
-# Remove Zinit plugins and data
+# Remove Zinit data
 ZINIT_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/zinit"
-rm -rf "$ZINIT_DIR"
-echo -e "${GREEN}✔ Configuration and plugin data removed.${NC}"
+if [ -d "$ZINIT_DIR" ]; then
+    rm -rf "$ZINIT_DIR"
+    echo -e "${GREEN}✔ Plugin data removed.${NC}"
+fi
 
 # -----------------------------------------------------------------------------
 # 3. OPTIONAL: REMOVE BINARIES
 # -----------------------------------------------------------------------------
 if [ "$CI_ENV" != "true" ]; then
-    echo -ne "${CYAN}Do you want to uninstall the CLI tools (eza, bat, fd, etc.)? [y/N]: ${NC}"
-    read -r REPLY
-    if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+    if [ ! -t 0 ]; then exec < /dev/tty; fi
+
+    echo -ne "${CYAN}Do you want to uninstall the CLI tools (eza, starship)? [y/N]: ${NC}"
+    read -r REPLY_BINS
+    if [[ "$REPLY_BINS" =~ ^[Yy]$ ]]; then
         echo -e "${YELLOW}:: Removing binaries...${NC}"
 
-        if [[ "$OSTYPE" == "darwin"* ]]; then
-            brew uninstall eza bat fd fzf ripgrep tealdeer zoxide starship 2>/dev/null || true
-        elif [ -f /etc/debian_version ]; then
-            sudo apt remove -y eza bat fd-find fzf ripgrep starship 2>/dev/null || true
-        elif [ -f /etc/fedora-release ]; then
-            sudo dnf remove -y eza bat fd fzf ripgrep starship 2>/dev/null || true
-        elif [ -f /etc/arch-release ]; then
-            sudo pacman -Rs --noconfirm eza bat fd fzf ripgrep starship 2>/dev/null || true
-        fi
+        case $DISTRO in
+            ubuntu|debian|pop|kali|linuxmint)
+                export DEBIAN_FRONTEND=noninteractive
+                sudo apt-get remove -qq -y eza starship > /dev/null 2>&1 || echo -e "${RED}! Some packages could not be removed via APT.${NC}"
+                
+                sudo rm -f /etc/apt/sources.list.d/gierens.list
+                sudo rm -f /etc/apt/keyrings/gierens.gpg
+                sudo apt-get update -qq -y > /dev/null 2>&1 || true
+                ;;
+            arch|manjaro|endeavouros)
+                sudo pacman -Rs --noconfirm eza starship > /dev/null 2>&1 || echo -e "${RED}! Some packages could not be removed via Pacman.${NC}"
+                ;;
+            fedora|rhel|centos)
+                sudo dnf remove -q -y eza starship > /dev/null 2>&1 || echo -e "${RED}! Some packages could not be removed via DNF.${NC}"
+                ;;
+            macos)
+                brew uninstall -q eza starship > /dev/null 2>&1 || echo -e "${RED}! Some packages could not be removed via Brew.${NC}"
+                ;;
+        esac
 
-        # IMPORTANT: Remove manual script-installed binaries
-        # These are often missed by package managers
-        [ -f /usr/local/bin/eza ] && sudo rm -f /usr/local/bin/eza
-        [ -f /usr/local/bin/starship ] && sudo rm -f /usr/local/bin/starship
+        # Manual binary removal for custom paths
+        for bin in /usr/local/bin/eza /usr/local/bin/starship; do
+            if [ -f "$bin" ]; then
+                sudo rm -f "$bin" || echo -e "${RED}✘ Failed to remove $bin${NC}"
+            fi
+        done
         
-        echo -e "${GREEN}✔ Binary cleanup complete.${NC}"
+        echo -e "${GREEN}✔ Binary cleanup attempt complete.${NC}"
     fi
 fi
 
@@ -102,19 +149,22 @@ fi
 # -----------------------------------------------------------------------------
 if [ "$CI_ENV" != "true" ]; then
     echo -ne "${CYAN}Do you want to remove FiraCode Nerd Fonts? [y/N]: ${NC}"
-    read -r REPLY
-    if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+    read -r REPLY_FONTS
+    if [[ "$REPLY_FONTS" =~ ^[Yy]$ ]]; then
         echo -e "${YELLOW}:: Removing fonts...${NC}"
+        
         FONT_DIR="$HOME/.local/share/fonts"
-        [[ "$OSTYPE" == "darwin"* ]] && FONT_DIR="$HOME/Library/Fonts"
+        [[ "$OS_TYPE" == "macos" ]] && FONT_DIR="$HOME/Library/Fonts"
 
-        rm -f "$FONT_DIR"/FiraCode* 2>/dev/null
-
-        # Refresh font cache if the tool exists
-        if command -v fc-cache >/dev/null 2>&1; then
-            fc-cache -f "$FONT_DIR" || true
+        if ls "$FONT_DIR"/FiraCode* >/dev/null 2>&1; then
+            rm -f "$FONT_DIR"/FiraCode*
+            if [[ "$OS_TYPE" == "linux" ]] && command -v fc-cache >/dev/null 2>&1; then
+                fc-cache -f -q "$FONT_DIR" > /dev/null 2>&1 || true
+            fi
+            echo -e "${GREEN}✔ Fonts removed.${NC}"
+        else
+            echo -e "${YELLOW}:: No FiraCode fonts found in $FONT_DIR.${NC}"
         fi
-        echo -e "${GREEN}✔ Fonts removed.${NC}"
     fi
 fi
 
