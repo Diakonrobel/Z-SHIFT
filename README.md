@@ -68,6 +68,7 @@ It handles the heavy lifting of installing a modern plugin manager, configuring 
   - **eza:** A modern & maintained replacement for `ls` with colors and icons. [https://github.com/eza-community/eza]
   - **fd:** A simple & fast and user-friendly alternative to `find`. [https://github.com/sharkdp/fd]
   - **fzf:** A general-purpose command-line fuzzy finder for lightning-fast file and history navigation. [https://github.com/junegunn/fzf]
+  - **fzf-tab:** Supercharges Zsh tab-completion by replacing the default menu with a fuzzy-search interface. [https://github.com/Aloxaf/fzf-tab]
   - **ripgrep:** A line-oriented search tool that respects .gitignore and is faster than grep. [https://github.com/BurntSushi/ripgrep]
   - **tealdeer:** A fast implementation of `tldr;` (simplified man pages). [https://github.com/tealdeer-rs/tealdeer]
   - **zoxide:** A smarter `cd` command that learns your habits. [https://github.com/ajeetdsouza/zoxide]
